@@ -1,0 +1,2 @@
+class RestrictedAccessException(Exception):
+    pass

@@ -1,0 +1,37 @@
+name: Production
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/master'
+    name: Production to Cloud Run
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: gcr.io/${{ secrets.PRODUCTION_GCP_PROJECT_ID }}/${{ secrets.PRODUCTION_GCP_APP_NAME }}
+
+    steps:
+      - name: Login
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: ${{ secrets.PRODUCTION_GCP_PROJECT_ID }}
+          service_account_email: ${{ secrets.PRODUCTION_GCP_EMAIL }}
+          service_account_key: ${{ secrets.PRODUCTION_GCP_CREDENTIALS }}
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker --quiet
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Push Docker image
+        run: docker push $IMAGE_NAME
+
+      - name: Deploy Docker image
+        run: gcloud run deploy ${{ secrets.PRODUCTION_GCP_PROJECT_ID }} --image $IMAGE_NAME --region australia-southeast1 --platform managed
