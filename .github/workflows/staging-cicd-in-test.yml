@@ -1,15 +1,29 @@
-name: Staging
+name: Testing
 on:
   push:
     branches:
-      - 'staging'
+      - 'pipeline-setup'
 
 jobs:
+  sonarcloud:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+          with:
+            fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     deploy:
       if: github.ref == 'refs/heads/staging'
       name: Staging to Cloud Run
       runs-on: ubuntu-latest
-
+      needs: sonarcloud
       env:
         IMAGE_NAME: gcr.io/${{ secrets.STAGING_GCP_PROJECT_ID }}/${{ secrets.STAGING_GCP_APP_NAME }}
 
