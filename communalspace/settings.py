@@ -12,9 +12,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from datetime import timedelta
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
+from .credentials_setup.firebase_admin import setup_firebase_admin_credentials
 import dj_database_url
 import os
 
+setup_firebase_admin_credentials()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -135,5 +137,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 # Firebase Admin Configuration
-FIREBASE_CREDENTIAL = credentials.Certificate(r'test-authentication-a1e77-firebase-adminsdk-x6wwn-a2f8ed442e.json')
+FIREBASE_CREDENTIAL = credentials.Certificate(r'firebase-credentials.json')
 FIREBASE_APP = initialize_app(credential=FIREBASE_CREDENTIAL)

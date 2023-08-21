@@ -12,5 +12,3 @@ H
 entrypoint.sh,0\c\0cea7692c70202285602879b9911467df97f3ce5
 U
 %.github/workflows/production-cicd.yml,2\7\2749ae3c377cadeb439856e381abc11023d3cc63
-q
-Atest-authentication-a1e77-firebase-adminsdk-x6wwn-a2f8ed442e.json,b\6\b619f5f04493cdb0d6ce7a9472bb247d19aa49e1
