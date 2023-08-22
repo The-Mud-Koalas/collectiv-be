@@ -10,5 +10,9 @@ H
 sonar-project.properties,2\5\2538046035efb77ecc44e1fd2eec1e2641594d4c
 =
 entrypoint.sh,0\c\0cea7692c70202285602879b9911467df97f3ce5
-U
-%.github/workflows/production-cicd.yml,2\7\2749ae3c377cadeb439856e381abc11023d3cc63
+=
+main/views.py,4\a\4a7418ac0d71420aaad89018b90f29ee93eb761e
+K
+communalspace/exceptions.py,6\7\67f5db72cebba654fadef6e7f39bdb898fbe857e
+Q
+!communalspace/exception_config.py,3\6\36c9425bf66c3f96e0ac3c4764b98a2b65223014
