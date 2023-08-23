@@ -77,17 +77,6 @@ def _create_event(request_data, event_space, event_tags, creator):
     event_is_project = request_data.get('is_project')
 
     if event_is_project:
-        new_event = Event.objects.create(
-            name=request_data.get('name'),
-            description=request_data.get('description'),
-            min_num_of_volunteers=request_data.get('min_num_of_volunteers'),
-            start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
-            end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
-            location=event_space,
-            creator=creator
-        )
-
-    else:
         new_event = Project.objects.create(
             name=request_data.get('name'),
             description=request_data.get('description'),
@@ -98,6 +87,17 @@ def _create_event(request_data, event_space, event_tags, creator):
             creator=creator,
             goal=request_data.get('project_goal'),
             measurement_unit=request_data.get('goal_measurement_unit')
+        )
+
+    else:
+        new_event = Event.objects.create(
+            name=request_data.get('name'),
+            description=request_data.get('description'),
+            min_num_of_volunteers=request_data.get('min_num_of_volunteers'),
+            start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
+            end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
+            location=event_space,
+            creator=creator
         )
 
     for tag in event_tags:
