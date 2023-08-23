@@ -1,4 +1,4 @@
-from .models import User
+from users.models import User
 
 
 def get_or_create_user_by_id(user_id):
