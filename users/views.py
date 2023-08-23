@@ -1,4 +1,4 @@
-from communalspace.firebase_auth_decorator import firebase_authenticated
+from communalspace.decorators import firebase_authenticated
 from django.db import transaction
 from django.views.decorators.http import require_POST
 from rest_framework.response import Response
