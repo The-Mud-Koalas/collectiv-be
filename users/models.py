@@ -41,6 +41,9 @@ class User(AbstractUser):
         self.location_track = location_track
         self.save()
 
+    def get_user_id(self):
+        return str(self.user_id)
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

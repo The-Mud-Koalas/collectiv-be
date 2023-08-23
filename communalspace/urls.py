@@ -23,4 +23,5 @@ urlpatterns = [
     path('', include('main.urls')),
     path('user/', include('users.urls')),
     path('space/', include('space.urls')),
+    path('event/', include('event.urls')),
 ]

@@ -34,7 +34,7 @@ def _create_location_from_request_data(request_data: dict) -> Space:
 
 def handle_get_or_create_location(request_data: dict) -> Space:
     _validate_create_location_request(request_data)
-    found_location = utils.get_location_from_coordinates(request_data.get('latitude'), request_data.get('longitude'))
+    found_location = utils.get_space_from_coordinates(request_data.get('latitude'), request_data.get('longitude'))
 
     if found_location:
         return found_location
