@@ -10,6 +10,12 @@ class Tags(models.Model):
     name = models.CharField(max_length=30)
 
 
+class TagsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tags
+        fields = '__all__'
+
+
 class EventStatus(models.TextChoices):
     SCHEDULED = 'Scheduled'
     ON_GOING = 'On Going'

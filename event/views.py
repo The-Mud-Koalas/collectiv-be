@@ -1,10 +1,10 @@
 from communalspace.decorators import firebase_authenticated
 from django.db import transaction
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import BaseEventSerializer
-from .services import event
+from .models import BaseEventSerializer, TagsSerializer
+from .services import event, tags
 import json
 
 
@@ -14,7 +14,7 @@ import json
 @transaction.atomic()
 def serve_create_event(request):
     """
-    This view serve as the endpoint to create event.
+    This view serves as the endpoint to create event.
     ----------------------------------------------------------
     request-data must contain:
     name: string
@@ -34,3 +34,19 @@ def serve_create_event(request):
     created_event = event.handle_create_event(request_data, user=request.user)
     response_data = BaseEventSerializer(created_event).data
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_all_tags(request):
+    """
+    This view serves as the endpoint to get all registered tags
+    ----------------------------------------------------------
+    request-param must contain:
+    NONE
+    """
+    all_tags = tags.handle_get_all_tags()
+    response_data = TagsSerializer(all_tags, many=True).data
+    return Response(data=response_data)
+
+
