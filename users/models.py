@@ -48,5 +48,11 @@ class User(AbstractUser):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = [
+            'user_id',
+            'full_name',
+            'reward_points',
+            'preferred_radius',
+            'location_track'
+        ]
 

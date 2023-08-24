@@ -1,7 +1,7 @@
 from firebase_admin import auth, exceptions as firebase_exceptions
 from .exceptions import UnauthorizedException, InvalidRequestException
 from .utils import get_id_token_from_authorization_header
-from users import utils as users_utils
+from users.services import utils as users_utils
 
 
 def firebase_authenticated():
