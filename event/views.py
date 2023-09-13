@@ -84,3 +84,26 @@ def serve_get_event_image_by_id(request, event_id):
     else:
         return Response(data={'message': 'No image has been uploaded for the event'})
 
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_nearby_events(request):
+    """
+    This view serves as the endpoint to get the nearby events
+    from the given coordinate. This view will be integrated
+    with the push notification system to alert user of the
+    nearby events.
+    ----------------------------------------------------------
+    request-param must contain:
+    latitude: float
+    longitude: float
+    """
+    request_data = request.GET
+    nearby_events = discover_event.handle_get_interest_based_nearby_events(request_data, request.user)
+    response_data = BaseEventSerializer(nearby_events, many=True).data
+    return Response(data=response_data)
+
+
+
+

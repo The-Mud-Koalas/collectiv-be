@@ -1,6 +1,7 @@
 from .exceptions import UnauthorizedException
 from datetime import datetime
 from django.http import HttpResponse
+from typing import Any
 import mimetypes
 import uuid
 
@@ -75,6 +76,16 @@ def get_prefix_from_file_name(file_name):
         return prefix
     except IndexError:
         raise ValueError(f'{file_name} is not a proper file name')
+
+
+def insert_to_list_with_key(collection: list, element: Any, key):
+    for index in range(len(collection)):
+        if key(collection[index]) > key(element):
+            temp_collection = collection.copy()
+            temp_collection.insert(index, element)
+            return temp_collection
+
+    return [*collection, element]
 
 
 def generate_file_response(response_file):

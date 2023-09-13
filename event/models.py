@@ -65,6 +65,9 @@ class Event(PolymorphicModel):
     def get_end_date_time_iso_format(self):
         return self.end_date_time.isoformat()
 
+    def get_tags(self):
+        return self.tags.all()
+
 
 class Project(Event):
     goal = models.FloatField()

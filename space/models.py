@@ -9,6 +9,9 @@ class Space(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
 
+    def get_events_of_space(self):
+        return self.event_set.all().order_by('name')
+
 
 class SpaceSerializer(serializers.ModelSerializer):
     class Meta:

@@ -19,3 +19,15 @@ def get_event_by_id_or_raise_exception(event_id):
     else:
         raise ObjectDoesNotExist(f'Event with id {event_id} does not exist')
 
+
+def parse_lat_long(lat_long_data):
+    try:
+        return [
+            float(lat_long_data.get('latitude')),
+            float(lat_long_data.get('longitude'))
+        ]
+
+    except (ValueError, TypeError):
+        raise ValueError('Latitude and Longitude must be a valid floating point number')
+
+
