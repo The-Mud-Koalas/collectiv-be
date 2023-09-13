@@ -3,7 +3,7 @@ from rest_framework import serializers
 import uuid
 
 
-class Space(models.Model):
+class Location(models.Model):
     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     name = models.CharField(max_length=50)
     latitude = models.FloatField()
@@ -13,8 +13,8 @@ class Space(models.Model):
         return self.event_set.all().order_by('name')
 
 
-class SpaceSerializer(serializers.ModelSerializer):
+class LocationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Space
+        model = Location
         fields = '__all__'
 

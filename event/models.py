@@ -1,7 +1,7 @@
 from django.db import models
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
-from space.models import SpaceSerializer
+from space.models import LocationSerializer
 import uuid
 
 
@@ -31,7 +31,7 @@ class Event(PolymorphicModel):
     start_date_time = models.DateTimeField()
     end_date_time = models.DateTimeField()
 
-    location = models.ForeignKey('space.Space', on_delete=models.RESTRICT)
+    location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
 
     creator = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=10, choices=EventStatus.choices, default=EventStatus.SCHEDULED)
@@ -87,7 +87,7 @@ class EventSerializer(serializers.ModelSerializer):
     event_end_date_time = serializers.SerializerMethodField(method_name='get_end_date_time_iso_format')
 
     def get_event_location_data(self, event):
-        return SpaceSerializer(event.get_location()).data
+        return LocationSerializer(event.get_location()).data
 
     def get_event_creator_user_id(self, event):
         return event.get_creator_id()

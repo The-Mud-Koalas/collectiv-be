@@ -1,7 +1,6 @@
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
-from communalspace import utils as app_utils
 from django.core.exceptions import ObjectDoesNotExist
 from space.services import utils as space_utils
 from users.models import User
@@ -31,26 +30,6 @@ def handle_get_event_image_by_id(event_id):
         return None
 
 
-def _get_nearby_subscribed_locations(locations, latitude, longitude, radius_tolerance):
-    nearby_spaces = []
-    for location in locations:
-        distance_between_space_and_coordinate = space_utils.haversine(
-            latitude,
-            longitude,
-            location.latitude,
-            location.longitude
-        )
-
-        if distance_between_space_and_coordinate <= radius_tolerance:
-            nearby_spaces = app_utils.insert_to_list_with_key(
-                nearby_spaces,
-                location,
-                key=lambda x: space_utils.haversine(latitude, longitude, x.latitude, x.longitude)
-            )
-
-    return nearby_spaces
-
-
 def _get_events_of_spaces(spaces):
     events_of_spaces = []
     for space in spaces:
@@ -74,8 +53,8 @@ def _get_events_matching_user_interest(events, user):
 @catch_exception_and_convert_to_invalid_request_decorator((ValueError,))
 def handle_get_interest_based_nearby_events(request_data, user: User):
     subscribed_locations = user.get_subscribed_locations()
-    latitude, longitude = utils.parse_lat_long(request_data)
-    nearby_spaces = _get_nearby_subscribed_locations(
+    latitude, longitude = space_utils.parse_lat_long(request_data)
+    nearby_spaces = space_utils.get_nearby_locations(
         subscribed_locations,
         latitude,
         longitude,

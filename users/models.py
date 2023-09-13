@@ -19,7 +19,7 @@ class User(AbstractUser):
     preferred_radius = models.FloatField(default=2000)
     location_track = models.BooleanField(default=True)
 
-    notified_locations = models.ManyToManyField('space.Space', through='users.NotifiedLocation')
+    notified_locations = models.ManyToManyField('space.Location', through='users.NotifiedLocation')
     interests = models.ManyToManyField('event.Tags')
 
     USERNAME_FIELD = 'user_id'
@@ -51,11 +51,14 @@ class User(AbstractUser):
             subscribed=is_subscribe
         )
 
-    def get_notified_locations(self):
+    def _get_notified_location_objects(self):
         return NotifiedLocation.objects.filter(user=self)
 
+    def get_notified_locations(self):
+        return list(map(lambda x: x.location, self._get_notified_location_objects()))
+
     def get_subscribed_locations(self):
-        return list(map(lambda n: n.location, self.get_notified_locations().filter(subscribed=True)))
+        return list(map(lambda n: n.location, self._get_notified_location_objects().filter(subscribed=True)))
 
     def get_user_id(self):
         return str(self.user_id)
@@ -81,6 +84,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 class NotifiedLocation(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
-    location = models.ForeignKey('space.Space', on_delete=models.RESTRICT)
+    location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
     subscribed = models.BooleanField(default=False)
 
