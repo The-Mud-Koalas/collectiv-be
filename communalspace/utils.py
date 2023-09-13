@@ -1,5 +1,7 @@
 from .exceptions import UnauthorizedException
 from datetime import datetime
+from django.http import HttpResponse
+import mimetypes
 import uuid
 
 
@@ -65,5 +67,20 @@ def is_valid_uuid_string(uuid_string):
         return True
     except ValueError:
         return False
-    
 
+
+def get_prefix_from_file_name(file_name):
+    try:
+        prefix = file_name.split('.')[1]
+        return prefix
+    except IndexError:
+        raise ValueError(f'{file_name} is not a proper file name')
+
+
+def generate_file_response(response_file):
+    content_type = mimetypes.guess_type(response_file.name)[0]
+    file_response = HttpResponse(response_file, content_type=content_type)
+    file_response['Content-Length'] = response_file.size
+    file_response['Content-Disposition'] = f'attachment; filename="{response_file.name}"'
+    file_response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+    return file_response

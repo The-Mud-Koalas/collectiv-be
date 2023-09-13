@@ -37,6 +37,18 @@ class Event(PolymorphicModel):
     status = models.CharField(max_length=10, choices=EventStatus.choices, default=EventStatus.SCHEDULED)
     tags = models.ManyToManyField('event.Tags')
 
+    event_image_directory = models.TextField(null=True, default=None)
+
+    def get_event_image_directory(self):
+        return self.event_image_directory
+
+    def set_event_image(self, event_image_directory):
+        self.event_image_directory = event_image_directory
+        self.save()
+
+    def get_id(self):
+        return str(self.id)
+
     def add_tags(self, tag):
         self.tags.add(tag)
         self.save()
