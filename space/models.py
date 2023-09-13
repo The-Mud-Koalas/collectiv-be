@@ -10,7 +10,7 @@ class Location(models.Model):
     longitude = models.FloatField()
 
     def get_events_of_space(self):
-        return self.event_set.all().order_by('name')
+        return self.event_set.all().order_by('start_date_time')
 
 
 class LocationSerializer(serializers.ModelSerializer):
