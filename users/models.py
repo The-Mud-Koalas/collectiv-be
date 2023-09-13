@@ -45,11 +45,17 @@ class User(AbstractUser):
         self.save()
 
     def add_to_notified_locations(self, location, is_subscribe):
-        NotifiedLocation.objects.create(
-            user=self,
-            location=location,
-            subscribed=is_subscribe
-        )
+        existing_notified_location = self._get_notified_location_objects().filter(location=location)
+        if not existing_notified_location.exists():
+            NotifiedLocation.objects.create(
+                user=self,
+                location=location,
+                subscribed=is_subscribe
+            )
+
+        else:
+            existing_notified_location = existing_notified_location[0]
+            existing_notified_location.update_subscription(is_subscribe)
 
     def _get_notified_location_objects(self):
         return NotifiedLocation.objects.filter(user=self)
@@ -86,4 +92,8 @@ class NotifiedLocation(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.CASCADE)
     location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
     subscribed = models.BooleanField(default=False)
+
+    def update_subscription(self, subscribed):
+        self.subscribed = subscribed
+        self.save()
 

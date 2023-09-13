@@ -49,3 +49,23 @@ def serve_get_nearby_non_subscribed_locations(request):
     )
     response_data = LocationSerializer(nearby_non_subscribed_locations, many=True).data
     return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
+def serve_subscribe_or_neglect_location(request):
+    """
+    This view serves as the endpoint for users to subscribe to new
+    location.
+    ----------------------------------------------------------
+    request-data must contain:
+    location_id: UUID string
+    subscribe: boolean
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    discover_space.handle_subscribe_or_neglect_location(request_data, request.user)
+    response_data = {'message': 'Location preference is successfully saved'}
+    return Response(data=response_data)
+
