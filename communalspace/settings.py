@@ -12,11 +12,12 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from datetime import timedelta
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
-from .credentials_setup.firebase_admin import setup_firebase_admin_credentials
+from .credentials_setup import firebase_admin, google_storage
 import dj_database_url
 import os
 
-setup_firebase_admin_credentials()
+firebase_admin.setup_firebase_admin_credentials()
+google_storage.setup_google_storage_credentials()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -62,6 +63,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'communalspace.urls'
@@ -142,3 +145,7 @@ AUTH_USER_MODEL = 'users.User'
 # Firebase Admin Configuration
 FIREBASE_CREDENTIAL = credentials.Certificate(r'firebase-credentials.json')
 FIREBASE_APP = initialize_app(credential=FIREBASE_CREDENTIAL)
+
+# Google Bucket Storage
+GOOGLE_BUCKET_BASE_DIRECTORY = 'event-images'
+GOOGLE_STORAGE_BUCKET_NAME = 'artifacts.mud-koalas-communal-space.appspot.com'

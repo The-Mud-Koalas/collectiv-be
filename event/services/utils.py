@@ -1,5 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import Tags
+from ..models import Tags, Event
 
 
 def get_tag_by_id_or_raise_exception(tag_id):
@@ -9,3 +9,13 @@ def get_tag_by_id_or_raise_exception(tag_id):
         return matching_tag[0]
     else:
         raise ObjectDoesNotExist(f'Tag with id {tag_id} does not exist')
+
+
+def get_event_by_id_or_raise_exception(event_id):
+    matching_event = Event.objects.filter(id=event_id)
+
+    if len(matching_event) > 0:
+        return matching_event[0]
+    else:
+        raise ObjectDoesNotExist(f'Event with id {event_id} does not exist')
+
