@@ -9,6 +9,11 @@ class Tags(models.Model):
     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     name = models.CharField(max_length=30)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['name']),
+        ]
+
 
 class TagsSerializer(serializers.ModelSerializer):
     class Meta:
