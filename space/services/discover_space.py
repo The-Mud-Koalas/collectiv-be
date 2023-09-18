@@ -14,7 +14,7 @@ def _get_non_notified_nearby_locations(nearby_locations, user):
 @catch_exception_and_convert_to_invalid_request_decorator((ValueError,))
 def handle_get_nearby_non_subscribed_locations(request_data, user):
     all_locations = Location.objects.all()
-    latitude, longitude = utils.parse_lat_long(request_data)
+    latitude, longitude = utils.parse_coordinate(request_data)
     nearby_locations = utils.get_nearby_locations(
         all_locations,
         latitude,

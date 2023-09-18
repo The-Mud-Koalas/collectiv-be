@@ -1,7 +1,8 @@
-from .exceptions import UnauthorizedException
+from communalspace.settings import DEFAULT_PAGE_LIMIT
 from datetime import datetime
 from django.http import HttpResponse
 from typing import Any
+from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
 
@@ -95,3 +96,14 @@ def generate_file_response(response_file):
     file_response['Content-Disposition'] = f'attachment; filename="{response_file.name}"'
     file_response['Access-Control-Expose-Headers'] = 'Content-Disposition'
     return file_response
+
+
+def parse_limit_page(limit, page):
+    try:
+        limit = int(limit)
+        page = int(page)
+    except ValueError:
+        limit = DEFAULT_PAGE_LIMIT
+        page = 1
+
+    return limit, page

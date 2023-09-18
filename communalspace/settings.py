@@ -87,6 +87,8 @@ TEMPLATES = [
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'communalspace.exception_config.custom_exception_handler',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 2,
 }
 
 WSGI_APPLICATION = 'communalspace.wsgi.application'
@@ -149,3 +151,6 @@ FIREBASE_APP = initialize_app(credential=FIREBASE_CREDENTIAL)
 # Google Bucket Storage
 GOOGLE_BUCKET_BASE_DIRECTORY = 'event-images'
 GOOGLE_STORAGE_BUCKET_NAME = 'artifacts.mud-koalas-communal-space.appspot.com'
+
+# Pagination Settings
+DEFAULT_PAGE_LIMIT = 10

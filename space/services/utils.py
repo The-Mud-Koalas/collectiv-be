@@ -1,7 +1,5 @@
-from communalspace import utils as app_utils
 from django.core.exceptions import ObjectDoesNotExist
-from typing import Optional
-from . import utils
+from typing import Optional, Tuple
 from ..models import Location
 import math
 
@@ -44,7 +42,7 @@ def haversine(lat1, long1, lat2, long2):
 def get_nearby_locations(locations, latitude, longitude, radius_tolerance):
     nearby_locations = []
     for location in locations:
-        distance_between_space_and_coordinate = utils.haversine(
+        distance_between_space_and_coordinate = haversine(
             latitude,
             longitude,
             location.latitude,
@@ -52,21 +50,29 @@ def get_nearby_locations(locations, latitude, longitude, radius_tolerance):
         )
 
         if distance_between_space_and_coordinate <= radius_tolerance:
-            nearby_locations = app_utils.insert_to_list_with_key(
-                nearby_locations,
-                location,
-                key=lambda x: utils.haversine(latitude, longitude, x.latitude, x.longitude)
-            )
+            nearby_locations.append(location)
+
+    nearby_locations = sorted(
+        nearby_locations,
+        key=lambda x: haversine(latitude, longitude, x.latitude, x.longitude)
+    )
 
     return nearby_locations
 
 
-def parse_lat_long(lat_long_data):
+def parse_coordinate(lat_long_data) -> Tuple[float, float]:
     try:
-        return [
-            float(lat_long_data.get('latitude')),
-            float(lat_long_data.get('longitude'))
-        ]
+        latitude = float(lat_long_data.get('latitude'))
+        longitude = float(lat_long_data.get('longitude'))
 
     except (ValueError, TypeError):
         raise ValueError('Latitude and Longitude must be a valid floating point number')
+
+    if abs(latitude) > 90:
+        raise ValueError('Location latitude must be between -90 and 90')
+
+    if abs(longitude) > 180:
+        raise ValueError('Location longitude must be between -180 and 180')
+
+    return latitude, longitude
+

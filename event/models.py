@@ -85,6 +85,7 @@ class EventSerializer(serializers.ModelSerializer):
     event_creator_id = serializers.SerializerMethodField(method_name='get_event_creator_user_id')
     event_start_date_time = serializers.SerializerMethodField(method_name='get_start_date_time_iso_format')
     event_end_date_time = serializers.SerializerMethodField(method_name='get_end_date_time_iso_format')
+    event_tags = serializers.SerializerMethodField(method_name='get_tags_names')
 
     def get_event_location_data(self, event):
         return LocationSerializer(event.get_location()).data
@@ -98,6 +99,9 @@ class EventSerializer(serializers.ModelSerializer):
     def get_end_date_time_iso_format(self, event):
         return event.get_end_date_time_iso_format()
 
+    def get_tags_names(self, event):
+        return TagsSerializer(event.get_tags(), many=True).data
+
     class Meta:
         model = Event
         fields = [
@@ -108,7 +112,8 @@ class EventSerializer(serializers.ModelSerializer):
             'event_location',
             'event_creator_id',
             'event_start_date_time',
-            'event_end_date_time'
+            'event_end_date_time',
+            'event_tags'
         ]
 
 
