@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BaseEventSerializer, TagsSerializer
 from .services import create_event, discover_event, tags
+import json
 
 
 @require_POST
@@ -52,6 +53,23 @@ def serve_get_all_tags(request):
     """
     all_tags = tags.handle_get_all_tags()
     response_data = TagsSerializer(all_tags, many=True).data
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+def serve_get_or_create_tags(request):
+    """
+    This view serves as the endpoint to register multiple tags.
+    In the case when a tag with the same name exists in the database,
+    the new insertion request will be neglected.
+    ----------------------------------------------------------
+    request-body must contain:
+    tags: list of strings
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    retrieved_tags = tags.handle_get_or_create_tags(request_data)
+    response_data = TagsSerializer(retrieved_tags, many=True).data
     return Response(data=response_data)
 
 

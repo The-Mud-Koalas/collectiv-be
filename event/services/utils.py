@@ -24,4 +24,12 @@ def convert_tag_names_to_tag(tag_names):
     return Tags.objects.filter(name__in=tag_names)
 
 
+def get_tag_from_name(tag_name):
+    matching_tag = Tags.objects.filter(name=tag_name)
+
+    if len(matching_tag) > 0:
+        return matching_tag[0]
+
+    return None
+
 
