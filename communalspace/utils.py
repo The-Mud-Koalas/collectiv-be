@@ -1,6 +1,8 @@
-from .exceptions import UnauthorizedException
+from communalspace.settings import DEFAULT_PAGE_LIMIT
 from datetime import datetime
 from django.http import HttpResponse
+from typing import Any
+from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
 
@@ -77,6 +79,16 @@ def get_prefix_from_file_name(file_name):
         raise ValueError(f'{file_name} is not a proper file name')
 
 
+def insert_to_list_with_key(collection: list, element: Any, key):
+    for index in range(len(collection)):
+        if key(collection[index]) > key(element):
+            temp_collection = collection.copy()
+            temp_collection.insert(index, element)
+            return temp_collection
+
+    return [*collection, element]
+
+
 def generate_file_response(response_file):
     content_type = mimetypes.guess_type(response_file.name)[0]
     file_response = HttpResponse(response_file, content_type=content_type)
@@ -84,3 +96,14 @@ def generate_file_response(response_file):
     file_response['Content-Disposition'] = f'attachment; filename="{response_file.name}"'
     file_response['Access-Control-Expose-Headers'] = 'Content-Disposition'
     return file_response
+
+
+def parse_limit_page(limit, page):
+    try:
+        limit = int(limit)
+        page = int(page)
+    except ValueError:
+        limit = DEFAULT_PAGE_LIMIT
+        page = 1
+
+    return limit, page

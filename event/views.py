@@ -1,5 +1,7 @@
+from communalspace import paginators
 from communalspace import utils as app_utils
 from communalspace.decorators import firebase_authenticated
+from communalspace.serializers import PaginatorSerializer
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
@@ -83,4 +85,56 @@ def serve_get_event_image_by_id(request, event_id):
 
     else:
         return Response(data={'message': 'No image has been uploaded for the event'})
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_nearby_events(request):
+    """
+    This view serves as the endpoint to get the nearby events
+    from the given coordinate. This view will be integrated
+    with the push notification system to alert user of the
+    nearby events.
+    ----------------------------------------------------------
+    request-param must contain:
+    latitude: float
+    longitude: float
+    """
+    request_data = request.GET
+    nearby_events = discover_event.handle_get_interest_based_nearby_events(request_data, request.user)
+    response_data = BaseEventSerializer(nearby_events, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_search_events(request):
+    """
+    This view serves as the endpoint to search for (nearby) events by using
+    the user's sent locations. This view also considers name-based and
+    tag-based search.
+
+    The results are presented using pagination to reduce the amount of data
+    transferred in one fetch.
+    ----------------------------------------------------------
+    request-param may contain:
+    latitude: float
+    longitude: float
+    name: string
+    tags: comma separated strings (example: go-green,body-building)
+
+    limit: integer (number of results to be displayed in one fetch)
+    page: integer
+    """
+    request_data = request.GET
+    events = discover_event.handle_search_events(request_data)
+    limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
+    paginated_result = paginators.paginate_result(events, limit, page_number)
+    data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
+    return Response(data=data)
+
+
+
+
 

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Space
+from .models import Location
 
 
-admin.site.register(Space)
+admin.site.register(Location)

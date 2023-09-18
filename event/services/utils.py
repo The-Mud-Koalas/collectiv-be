@@ -19,3 +19,9 @@ def get_event_by_id_or_raise_exception(event_id):
     else:
         raise ObjectDoesNotExist(f'Event with id {event_id} does not exist')
 
+
+def convert_tag_names_to_tag(tag_names):
+    return Tags.objects.filter(name__in=tag_names)
+
+
+
