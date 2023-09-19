@@ -73,6 +73,39 @@ class Event(PolymorphicModel):
     def get_tags(self):
         return self.tags.all()
 
+    def get_participation_by_participant(self, participant):
+        matching_participation = self.eventparticipation_set.filter(participant=participant)
+
+        if len(matching_participation) > 0:
+            return matching_participation[0]
+
+        else:
+            return None
+
+    def check_participation(self, participant):
+        return self.get_participation_by_participant(participant=participant) is not None
+
+    def add_participant(self, participant):
+        event_participation = EventParticipation.objects.create(
+            event=self,
+            participant=participant,
+            participation_type=EventParticipationType.PARTICIPANT
+        )
+
+        return event_participation
+
+    def add_volunteer(self, volunteer):
+        event_participation = EventParticipation.objects.create(
+            event=self,
+            participant=volunteer,
+            participation_type=EventParticipationType.VOLUNTEER
+        )
+
+        return event_participation
+
+    def is_active(self):
+        return self.status in (EventStatus.SCHEDULED, EventStatus.ON_GOING)
+
 
 class Project(Event):
     goal = models.FloatField()
@@ -136,4 +169,26 @@ class BaseEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class EventParticipationType(models.TextChoices):
+    PARTICIPANT = 'participant'
+    VOLUNTEER = 'volunteer'
 
+
+class EventParticipation(models.Model):
+    event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
+    participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    registration_date = models.DateTimeField(auto_now=True)
+
+    event_rating = models.SmallIntegerField(null=True)
+    event_review = models.TextField(null=True)
+    does_attend = models.BooleanField(default=False)
+
+    participation_type = models.CharField(choices=EventParticipationType.choices)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['event', 'participant'])
+        ]
+
+    def get_participation_type(self):
+        return self.participation_type
