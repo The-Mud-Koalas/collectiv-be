@@ -32,13 +32,28 @@ def serve_create_event(request):
 
     location_id: UUID string
     tags: list[string] (containing the tags ID for the event)
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    created_event = create_event.handle_create_event(request_data, user=request.user)
+    response_data = BaseEventSerializer(created_event).data
+    return Response(data=response_data)
 
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_upload_event_image(request):
+    """
+    This view serves as the endpoint to upload image of event.
+    ----------------------------------------------------------
+    request data must contain:
+    event_id: UUID string
     event_image: Image Blob
     """
     request_data = request.POST.dict()
     request_file = request.FILES.get('event_image')
-    created_event = create_event.handle_create_event(request_data, request_file, user=request.user)
-    response_data = BaseEventSerializer(created_event).data
+    create_event.handle_upload_event_image(request_data, image_file=request_file, user=request.user)
+    response_data = {'message': 'Image of event is successfully uploaded'}
     return Response(data=response_data)
 
 
