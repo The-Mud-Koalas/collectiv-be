@@ -5,6 +5,7 @@ from communalspace.settings import GOOGLE_BUCKET_BASE_DIRECTORY, GOOGLE_STORAGE_
 from communalspace.storage import google_storage
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
+from google.api_core import exceptions as google_exceptions
 from numbers import Number
 from space.services import utils as space_utils
 from . import utils
@@ -118,8 +119,19 @@ def handle_create_event(request_data, user):
     return created_event
 
 
+def _delete_event_image(event):
+    try:
+        google_storage.delete_file_from_google_bucket(event.get_event_image_directory(), GOOGLE_STORAGE_BUCKET_NAME)
+
+    except google_exceptions.NotFound as exc:
+        pass
+
+
 def _upload_event_image(event, image_file):
     if image_file:
+        if event.get_event_image_directory() is not None:
+            _delete_event_image(event)
+
         file_prefix = app_utils.get_prefix_from_file_name(image_file.name)
         image_file_name = f'{GOOGLE_BUCKET_BASE_DIRECTORY}/{event.get_id()}.{file_prefix}'
         google_storage.upload_file_to_google_bucket(image_file_name, GOOGLE_STORAGE_BUCKET_NAME, image_file)
