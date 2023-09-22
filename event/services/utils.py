@@ -1,5 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import Tags, Event
+from ..models import Event, EventCategory, Tags
 
 
 def get_tag_by_id_or_raise_exception(tag_id):
@@ -33,3 +33,10 @@ def get_tag_from_name(tag_name):
     return None
 
 
+def get_category_from_name(category_name):
+    matching_category = EventCategory.objects.filter(name=category_name)
+
+    if len(matching_category) > 0:
+        return matching_category[0]
+
+    return None

@@ -28,6 +28,17 @@ class EventStatus(models.TextChoices):
     CANCELLED = 'Cancelled'
 
 
+class EventCategory(models.Model):
+    id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
+    name = models.CharField(max_length=50)
+
+
+class EventCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventCategory
+        fields = '__all__'
+
+
 class Event(PolymorphicModel):
     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     name = models.CharField(max_length=50)
@@ -44,25 +55,31 @@ class Event(PolymorphicModel):
 
     event_image_directory = models.TextField(null=True, default=None)
 
-    def get_event_image_directory(self):
-        return self.event_image_directory
-
     def set_event_image(self, event_image_directory):
         self.event_image_directory = event_image_directory
         self.save()
-
-    def get_id(self):
-        return str(self.id)
 
     def add_tags(self, tag):
         self.tags.add(tag)
         self.save()
 
+    def get_event_image_directory(self):
+        return self.event_image_directory
+
+    def get_name(self):
+        return self.name
+
+    def get_id(self):
+        return str(self.id)
+
     def get_location(self):
         return self.location
 
+    def get_creator(self):
+        return self.creator
+
     def get_creator_id(self):
-        return self.creator.get_user_id()
+        return self.get_creator().get_user_id()
 
     def get_start_date_time_iso_format(self):
         return self.start_date_time.isoformat()

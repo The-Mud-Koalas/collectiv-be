@@ -1,27 +1,15 @@
 from communalspace import utils as app_utils
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
-from communalspace.exceptions import InvalidRequestException
+from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from communalspace.settings import GOOGLE_BUCKET_BASE_DIRECTORY, GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
 from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
+from google.api_core import exceptions as google_exceptions
 from numbers import Number
 from space.services import utils as space_utils
 from . import utils
 from ..models import Event, Project
-import json
-
-
-def _transform_stringified_attributes(request_data):
-    try:
-        request_data['is_project'] = json.loads(request_data.get('is_project'))
-        request_data['project_goal'] = json.loads(request_data.get('project_goal'))
-        request_data['min_num_of_volunteers'] = json.loads(request_data.get('min_num_of_volunteers'))
-        request_data['tags'] = json.loads(request_data.get('tags'))
-
-        return request_data
-    except json.JSONDecodeError:
-        raise InvalidRequestException('Request contains an invalid JSON string')
 
 
 def _validate_create_event_request(request_data):
@@ -121,25 +109,45 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
     return new_event
 
 
-def _upload_event_image(event, image_file):
-    if image_file:
-        file_prefix = app_utils.get_prefix_from_file_name(image_file.name)
-        image_file_name = f'{GOOGLE_BUCKET_BASE_DIRECTORY}/{event.get_id()}.{file_prefix}'
-        google_storage.upload_file_to_google_bucket(image_file_name, GOOGLE_STORAGE_BUCKET_NAME, image_file)
-
-        event.set_event_image(image_file_name)
-
-
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
-def handle_create_event(request_data, image_file, user):
-    request_data = _transform_stringified_attributes(request_data)
+def handle_create_event(request_data, user):
     _validate_create_event_request(request_data)
     request_data = app_utils.trim_all_request_attributes(request_data)
     event_space = space_utils.get_space_by_id_or_raise_exception(request_data.get('location_id'))
     event_tags = _convert_tag_ids_to_tags(request_data.get('tags'))
     created_event = _create_event(request_data, event_space=event_space, event_tags=event_tags, creator=user)
-    _upload_event_image(created_event, image_file)
     return created_event
+
+
+def _delete_event_image(event):
+    try:
+        google_storage.delete_file_from_google_bucket(event.get_event_image_directory(), GOOGLE_STORAGE_BUCKET_NAME)
+
+    except google_exceptions.NotFound as exc:
+        pass
+
+
+def _upload_event_image(event, image_file):
+    if image_file:
+        if event.get_event_image_directory() is not None:
+            _delete_event_image(event)
+
+        file_prefix = app_utils.get_prefix_from_file_name(image_file.name)
+        image_file_name = f'{GOOGLE_BUCKET_BASE_DIRECTORY}/{event.get_id()}.{file_prefix}'
+        google_storage.upload_file_to_google_bucket(image_file_name, GOOGLE_STORAGE_BUCKET_NAME, image_file)
+        event.set_event_image(image_file_name)
+
+
+def _validate_event_ownership(event, user):
+    if event.get_creator() != user:
+        raise RestrictedAccessException(f'User {user.get_name()} is not the creator of event {event.get_name()}')
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_upload_event_image(request_data, image_file, user):
+    event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    _validate_event_ownership(event, user)
+    _upload_event_image(event, image_file)
 
 
 

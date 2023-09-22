@@ -6,14 +6,32 @@ from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import BaseEventSerializer, TagsSerializer
+from .models import BaseEventSerializer, EventCategorySerializer, TagsSerializer
 from .services import (
+    category,
     create_event,
     discover_event,
     participation,
     tags,
 )
 import json
+
+
+@require_POST
+@api_view(['POST'])
+def serve_create_event_category(request):
+    """
+    This view serves as the endpoint to register new event category.
+    In the case when the category has been registered, the request will
+    be neglected.
+    ----------------------------------------------------------
+    request-data must contain:
+    name: string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    event_category = category.handle_create_event_category(request_data)
+    response_data = EventCategorySerializer(event_category).data
+    return Response(data=response_data)
 
 
 @require_POST
@@ -37,13 +55,28 @@ def serve_create_event(request):
 
     location_id: UUID string
     tags: list[string] (containing the tags ID for the event)
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    created_event = create_event.handle_create_event(request_data, user=request.user)
+    response_data = BaseEventSerializer(created_event).data
+    return Response(data=response_data)
 
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_upload_event_image(request):
+    """
+    This view serves as the endpoint to upload image of event.
+    ----------------------------------------------------------
+    request data must contain:
+    event_id: UUID string
     event_image: Image Blob
     """
     request_data = request.POST.dict()
     request_file = request.FILES.get('event_image')
-    created_event = create_event.handle_create_event(request_data, request_file, user=request.user)
-    response_data = BaseEventSerializer(created_event).data
+    create_event.handle_upload_event_image(request_data, image_file=request_file, user=request.user)
+    response_data = {'message': 'Image of event is successfully uploaded'}
     return Response(data=response_data)
 
 
