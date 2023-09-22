@@ -6,9 +6,26 @@ from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import BaseEventSerializer, TagsSerializer
-from .services import create_event, discover_event, tags
+from .models import BaseEventSerializer, EventCategorySerializer, TagsSerializer
+from .services import category, create_event, discover_event, tags
 import json
+
+
+@require_POST
+@api_view(['POST'])
+def serve_create_event_category(request):
+    """
+    This view serves as the endpoint to register new event category.
+    In the case when the category has been registered, the request will
+    be neglected.
+    ----------------------------------------------------------
+    request-data must contain:
+    name: string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    event_category = category.handle_create_event_category(request_data)
+    response_data = EventCategorySerializer(event_category).data
+    return Response(data=response_data)
 
 
 @require_POST

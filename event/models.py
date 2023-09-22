@@ -28,6 +28,17 @@ class EventStatus(models.TextChoices):
     CANCELLED = 'Cancelled'
 
 
+class EventCategory(models.Model):
+    id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
+    name = models.CharField(max_length=50)
+
+
+class EventCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventCategory
+        fields = '__all__'
+
+
 class Event(PolymorphicModel):
     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     name = models.CharField(max_length=50)
