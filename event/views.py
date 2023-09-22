@@ -7,7 +7,12 @@ from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BaseEventSerializer, TagsSerializer
-from .services import create_event, discover_event, tags
+from .services import (
+    create_event,
+    discover_event,
+    participation,
+    tags,
+)
 import json
 
 
@@ -153,6 +158,40 @@ def serve_search_events(request):
     return Response(data=data)
 
 
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_register_user_participation_to_event(request):
+    """
+    This view serves as the endpoint to register user
+    as an event participant. The event current status should
+    not be completed or cancelled.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    participation.handle_register_user_participation_to_event(request_data, request.user)
+    response_data = {'message': 'Participant is successfully added'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_register_user_volunteer_to_event(request):
+    """
+    This view serves as the endpoint to register user
+    as an event volunteer. The event current status should
+    not be completed or cancelled.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    participation.handle_register_user_volunteering_to_event(request_data, request.user)
+    response_data = {'message': 'Volunteer is successfully added'}
+    return Response(data=response_data)
 
 
 
