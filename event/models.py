@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
@@ -106,16 +108,14 @@ class Event(PolymorphicModel):
         event_participation = EventParticipation.objects.create(
             event=self,
             participant=participant,
-            participation_type=EventParticipationType.PARTICIPANT
         )
 
         return event_participation
 
     def add_volunteer(self, volunteer):
-        event_participation = EventParticipation.objects.create(
+        event_participation = EventVolunteerParticipation.objects.create(
             event=self,
             participant=volunteer,
-            participation_type=EventParticipationType.VOLUNTEER
         )
 
         return event_participation
@@ -186,21 +186,16 @@ class BaseEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class EventParticipationType(models.TextChoices):
-    PARTICIPANT = 'participant'
-    VOLUNTEER = 'volunteer'
-
-
-class EventParticipation(models.Model):
+class EventParticipation(PolymorphicModel):
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
-    registration_date = models.DateTimeField(auto_now=True)
+    registration_time = models.DateTimeField(auto_now=True)
 
     event_rating = models.SmallIntegerField(null=True)
     event_review = models.TextField(null=True)
-    does_attend = models.BooleanField(default=False)
 
-    participation_type = models.CharField(choices=EventParticipationType.choices)
+    check_in_time = models.DateTimeField(null=True)
+    check_out_time = models.DateTimeField(null=True)
 
     class Meta:
         indexes = [
@@ -208,4 +203,12 @@ class EventParticipation(models.Model):
         ]
 
     def get_participation_type(self):
-        return self.participation_type
+        return 'participant'
+
+
+class EventVolunteerParticipation(EventParticipation):
+    granted_manager_access = models.BooleanField(default=False)
+
+    def get_participant_type(self):
+        return 'volunteer'
+
