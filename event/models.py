@@ -3,6 +3,8 @@ import datetime
 from django.db import models
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
+
+from event.exceptions import InvalidCheckInCheckOutException
 from space.models import LocationSerializer
 import uuid
 
@@ -123,6 +125,9 @@ class Event(PolymorphicModel):
     def is_active(self):
         return self.status in (EventStatus.SCHEDULED, EventStatus.ON_GOING)
 
+    def check_user_is_inside_event(self, user_latitude, user_longitude):
+        return self.location.coordinate_is_inside_location(user_latitude, user_longitude)
+
 
 class Project(Event):
     goal = models.FloatField()
@@ -204,6 +209,23 @@ class EventParticipation(PolymorphicModel):
 
     def get_participation_type(self):
         return 'participant'
+
+    def check_in(self):
+        if self.check_in_time is not None:
+            raise InvalidCheckInCheckOutException(f'User already checked in at {self.check_in_time}')
+
+        self.check_in_time = datetime.datetime.utcnow()
+        self.save()
+
+    def check_out(self):
+        if self.check_in_time is None:
+            raise InvalidCheckInCheckOutException('Check in time does not exist')
+
+        if self.check_out_time is not None:
+            raise InvalidCheckInCheckOutException(f'User already checked out at {self.check_out_time}')
+
+        self.check_out_time = datetime.datetime.utcnow()
+        self.save()
 
 
 class EventVolunteerParticipation(EventParticipation):

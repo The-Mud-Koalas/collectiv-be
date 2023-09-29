@@ -4,10 +4,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from . import utils
 
 
-def _validate_participation_registration(event, user):
+def validate_event_is_active(event):
     if not event.is_active():
         raise InvalidRequestException('Event is cancelled or has been completed')
 
+
+def _validate_participation_registration(event, user):
+    validate_event_is_active(event)
     user_event_participation = event.get_participation_by_participant(user)
     if user_event_participation is not None:
         raise InvalidRequestException(

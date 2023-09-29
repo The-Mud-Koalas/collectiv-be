@@ -12,6 +12,7 @@ from .services import (
     create_event,
     discover_event,
     participation,
+    participation_attendance,
     tags,
 )
 import json
@@ -224,6 +225,63 @@ def serve_register_user_volunteer_to_event(request):
     request_data = json.loads(request.body.decode('utf-8'))
     participation.handle_register_user_volunteering_to_event(request_data, request.user)
     response_data = {'message': 'Volunteer is successfully added'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_participation_self_check_in_confirmation(request):
+    """
+    This view serves as the endpoint to allow user to perform
+    self check in (as a participant) to an event.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    participation_attendance.handle_participation_self_check_in_confirmation(request_data, request.user)
+    response_data = {'message': 'Participant successfully checked in'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_participation_self_check_out_confirmation(request):
+    """
+    This view serves as the endpoint to allow user to perform
+    self check out (as a participant) from an event.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    participation_attendance.handle_participation_self_check_out_confirmation(request_data, request.user)
+    response_data = {'message': 'Participant successfully checked out'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_participation_automated_check_out(request):
+    """
+    This view serves as the endpoint to automatically check out user
+    when the user exited the location.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    check_out_status = participation_attendance.handle_participation_automatic_check_out(request_data, request.user)
+    response_data = {'checked_out': check_out_status}
     return Response(data=response_data)
 
 
