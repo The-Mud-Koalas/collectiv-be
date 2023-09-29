@@ -128,6 +128,17 @@ class Event(PolymorphicModel):
     def check_user_is_inside_event(self, user_latitude, user_longitude):
         return self.location.coordinate_is_inside_location(user_latitude, user_longitude)
 
+    def check_user_is_granted_manager_access(self, user):
+        """
+        1. User is the creator of event, or
+        2. User is a volunteer and has been granted access by other granter
+        """
+        if user == self.get_creator():
+            return True
+
+        participation = self.get_participation_by_participant(user)
+        return isinstance(participation, EventVolunteerParticipation) and participation.get_granted_manager_access()
+
 
 class Project(Event):
     goal = models.FloatField()
@@ -233,4 +244,7 @@ class EventVolunteerParticipation(EventParticipation):
 
     def get_participant_type(self):
         return 'volunteer'
+
+    def get_granted_manager_access(self):
+        return self.granted_manager_access
 

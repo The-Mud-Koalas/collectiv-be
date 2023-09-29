@@ -1,6 +1,6 @@
-from . import utils
 from .participation import validate_event_is_active
-from ..exceptions import InvalidCheckInCheckOutException
+from event.services import utils
+from event.exceptions import InvalidCheckInCheckOutException
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
 from django.core.exceptions import ObjectDoesNotExist
@@ -9,7 +9,7 @@ from space.services import utils as space_utils
 
 def _validate_user_is_a_participant(participation):
     if participation is None or participation.get_participation_type() != 'participant':
-        raise InvalidRequestException(f'User is not a participant of event')
+        raise InvalidRequestException('User is not a participant of event')
 
 
 def _validate_user_is_inside_event_location(event, user_latitude, user_longitude):
