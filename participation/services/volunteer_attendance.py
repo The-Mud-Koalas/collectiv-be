@@ -31,7 +31,7 @@ def handle_volunteer_assisted_check_in(request_data, assisting_user):
     validate_event_is_active(event)
     _validate_assisting_user_is_manager_of_event(event, assisting_user)
 
-    checking_in_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('user_id'))
+    checking_in_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('volunteer_user_id'))
     participation = event.get_participation_by_participant(checking_in_user)
     _validate_user_is_a_volunteer(participation)
 
@@ -52,5 +52,25 @@ def handle_volunteer_self_check_out(request_data, user):
     _validate_user_is_a_volunteer(participation)
 
     participation.check_out()
+
+
+def handle_volunteer_grant_managerial_role(request_data, manager_user):
+    """
+    1. Validate event exists
+    2. Validate user is a manager of event
+    3. Get volunteer from user id
+    4. Validate volunteer already checks in
+    5. Grant access to user as manager
+    """
+    event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    validate_event_is_active(event)
+    _validate_assisting_user_is_manager_of_event(event, manager_user)
+
+    granted_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('volunteer_user_id'))
+    participation = event.get_participation_by_participant(granted_user)
+    _validate_user_is_a_volunteer(participation)
+
+    participation.set_as_manager()
+
 
 

@@ -248,3 +248,10 @@ class EventVolunteerParticipation(EventParticipation):
     def get_granted_manager_access(self):
         return self.granted_manager_access
 
+    def set_as_manager(self):
+        if self.check_in_time is None:
+            raise InvalidCheckInCheckOutException('User must check in before being granted a managerial role')
+
+        self.granted_manager_access = True
+        self.save()
+

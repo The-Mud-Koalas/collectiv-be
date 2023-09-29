@@ -118,7 +118,7 @@ def serve_volunteer_assisted_check_in(request):
     ----------------------------------------------------------
     request-body must contain:
     event_id: UUID string
-    user_id: String
+    volunteer_user_id: String
     """
     request_data = json.loads(request.body.decode('utf-8'))
     volunteer_attendance.handle_volunteer_assisted_check_in(request_data, request.user)
@@ -146,5 +146,25 @@ def serve_volunteer_self_check_out(request):
     volunteer_attendance.handle_volunteer_self_check_out(request_data, request.user)
     response_data = {'message': 'Volunteer successfully checked out'}
     return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_volunteer_grant_managerial_role(request):
+    """
+    This view serves as the endpoint to allow event managers (i.e. creator/volunteer
+    that has been granted managerial role to grant managerial role to other
+    volunteers.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    volunteer_user_id: string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    volunteer_attendance.handle_volunteer_grant_managerial_role(request_data, request.user)
+    response_data = {'message': 'Manager role has been successfully granted to user'}
+    return Response(data=response_data)
+
 
 
