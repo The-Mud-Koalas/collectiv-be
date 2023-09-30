@@ -11,6 +11,7 @@ from .services import (
     category,
     create_event,
     discover_event,
+    event_management,
     tags,
 )
 import json
@@ -201,7 +202,10 @@ def serve_update_event_status(request):
     event_id: UUID string
     status: string (Scheduled, On Going, Completed, Cancelled)
     """
-    pass
+    request_data = json.loads(request.body.decode('utf-8'))
+    event_management.handle_update_event_status(request_data, request.user)
+    response_data = {'message': 'Event status is successfully updated'}
+    return Response(data=response_data)
 
 
 
