@@ -1,11 +1,11 @@
-import datetime
-
 from django.db import models
+from event.exceptions import InvalidCheckInCheckOutException
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
-
-from event.exceptions import InvalidCheckInCheckOutException
+from review.models import ParticipationVolunteeringReview, ContributionReview
 from space.models import LocationSerializer
+
+import datetime
 import uuid
 
 
@@ -159,13 +159,22 @@ class Project(Event):
     def get_measurement_unit(self):
         return self.measurement_unit
 
-    def add_contributor(self, contributor):
-        project_contribution = ProjectContribution.objects.create(
+    def add_participant(self, participant):
+        event_participation = ProjectContribution.objects.create(
             event=self,
-            contributor=contributor,
+            contributor=participant,
         )
 
-        return project_contribution
+        return event_participation
+
+    def get_participation_by_participant(self, participant):
+        matching_participation = self.projectcontribution_set.filter(contributor=participant)
+
+        if len(matching_participation) > 0:
+            return matching_participation[0]
+
+        else:
+            return None
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -224,9 +233,6 @@ class EventParticipation(PolymorphicModel):
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     registration_time = models.DateTimeField(auto_now=True)
 
-    event_rating = models.SmallIntegerField(null=True)
-    event_review = models.TextField(null=True)
-
     check_in_time = models.DateTimeField(null=True)
     check_out_time = models.DateTimeField(null=True)
 
@@ -255,6 +261,18 @@ class EventParticipation(PolymorphicModel):
         self.check_out_time = datetime.datetime.utcnow()
         self.save()
 
+    def has_checked_out(self):
+        return self.check_out_time is not None
+
+    def create_review(self, rating, comment):
+        review = ParticipationVolunteeringReview.objects.create(
+            participation=self,
+            event_rating=rating,
+            event_comment=comment,
+        )
+
+        return review
+
 
 class EventVolunteerParticipation(EventParticipation):
     granted_manager_access = models.BooleanField(default=False)
@@ -281,4 +299,12 @@ class ProjectContribution(models.Model):
     event_review = models.TextField(null=True)
 
     contribution_time = models.DateTimeField(auto_now=True)
+
+    def create_review(self, rating, comment):
+        return ContributionReview(
+            contribution=self,
+            event_rating=rating,
+            event_comment=comment,
+        )
+
 
