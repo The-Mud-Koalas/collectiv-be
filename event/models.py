@@ -62,6 +62,9 @@ class Event(PolymorphicModel):
     def get_type(self):
         return 'event'
 
+    def get_status(self):
+        return self.status
+
     def set_event_image(self, event_image_directory):
         self.event_image_directory = event_image_directory
         self.save()
@@ -144,6 +147,10 @@ class Event(PolymorphicModel):
 
         participation = self.get_participation_by_participant(user)
         return isinstance(participation, EventVolunteerParticipation) and participation.get_granted_manager_access()
+
+    def set_status(self, status):
+        self.status = status
+        self.save()
 
 
 class Project(Event):

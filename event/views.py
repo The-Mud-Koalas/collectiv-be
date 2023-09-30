@@ -190,5 +190,19 @@ def serve_search_events(request):
     return Response(data=data)
 
 
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_update_event_status(request):
+    """
+    This view serves as the endpoint to update the event status.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    status: string (Scheduled, On Going, Completed, Cancelled)
+    """
+    pass
+
+
 
 
