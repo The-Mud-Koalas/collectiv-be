@@ -184,3 +184,21 @@ def serve_volunteer_mark_participant_contribution(request):
     response_data = {'message': 'Participant contribution has been added successfully'}
     return Response(data=response_data)
 
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_participant_volunteer_leave_events(request):
+    """
+    This view serves as the endpoint for participant and volunteers
+    to leave the events that they are currently participating on.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    participation.handle_participant_volunteer_leave_events(request_data, request.user)
+    response_data = {'message': 'User participation is deleted successfully'}
+    return Response(data=response_data)
+
+

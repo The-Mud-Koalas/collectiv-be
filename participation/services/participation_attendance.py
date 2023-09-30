@@ -1,8 +1,7 @@
-from .participation import validate_event_is_active
-from event.services import utils
-from event.exceptions import InvalidCheckInCheckOutException
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
+from event.services import utils
+from event.exceptions import InvalidCheckInCheckOutException
 from django.core.exceptions import ObjectDoesNotExist
 from space.services import utils as space_utils
 
