@@ -62,6 +62,9 @@ class Event(PolymorphicModel):
     def get_type(self):
         return 'event'
 
+    def get_status(self):
+        return self.status
+
     def set_event_image(self, event_image_directory):
         self.event_image_directory = event_image_directory
         self.save()
@@ -145,10 +148,26 @@ class Event(PolymorphicModel):
         participation = self.get_participation_by_participant(user)
         return isinstance(participation, EventVolunteerParticipation) and participation.get_granted_manager_access()
 
+    def set_status(self, status):
+        self.status = status
+        self.save()
+
 
 class Project(Event):
     goal = models.FloatField()
+    progress = models.FloatField(default=0)
     measurement_unit = models.CharField(max_length=30)
+
+    def increase_progress(self, amount_to_increase):
+        self.progress = self.progress + amount_to_increase
+        self.save()
+
+    def decrease_progress(self, amount_to_decrease):
+        if self.progress < amount_to_decrease:
+            raise ValueError('Amount to decrease must not exceed the current progress')
+
+        self.progress = self.progress - amount_to_decrease
+        self.save()
 
     def get_type(self):
         return 'project'

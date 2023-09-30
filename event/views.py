@@ -11,6 +11,7 @@ from .services import (
     category,
     create_event,
     discover_event,
+    event_management,
     tags,
 )
 import json
@@ -188,6 +189,42 @@ def serve_search_events(request):
     paginated_result = paginators.paginate_result(events, limit, page_number)
     data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
     return Response(data=data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_update_event_status(request):
+    """
+    This view serves as the endpoint to update the event status.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    status: string (Scheduled, On Going, Completed, Cancelled)
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    event_management.handle_update_event_status(request_data, request.user)
+    response_data = {'message': 'Event status is successfully updated'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_update_project_progress(request):
+    """
+    This view serves as the endpoint for project creator to update
+    the current progress of the project
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    amount_to_update: integer
+    type: increase/decrease
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    event_management.handle_update_project_progress(request_data, request.user)
+    response_data = {'message': 'Event progress is successfully updated'}
+    return Response(data=response_data)
 
 
 
