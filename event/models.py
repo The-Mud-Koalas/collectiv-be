@@ -1,6 +1,10 @@
+import datetime
+
 from django.db import models
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
+
+from event.exceptions import InvalidCheckInCheckOutException
 from space.models import LocationSerializer
 import uuid
 
@@ -55,6 +59,9 @@ class Event(PolymorphicModel):
 
     event_image_directory = models.TextField(null=True, default=None)
 
+    def get_type(self):
+        return 'event'
+
     def set_event_image(self, event_image_directory):
         self.event_image_directory = event_image_directory
         self.save()
@@ -106,16 +113,14 @@ class Event(PolymorphicModel):
         event_participation = EventParticipation.objects.create(
             event=self,
             participant=participant,
-            participation_type=EventParticipationType.PARTICIPANT
         )
 
         return event_participation
 
     def add_volunteer(self, volunteer):
-        event_participation = EventParticipation.objects.create(
+        event_participation = EventVolunteerParticipation.objects.create(
             event=self,
             participant=volunteer,
-            participation_type=EventParticipationType.VOLUNTEER
         )
 
         return event_participation
@@ -123,16 +128,44 @@ class Event(PolymorphicModel):
     def is_active(self):
         return self.status in (EventStatus.SCHEDULED, EventStatus.ON_GOING)
 
+    def is_ongoing(self):
+        return self.status == EventStatus.ON_GOING
+
+    def check_user_is_inside_event(self, user_latitude, user_longitude):
+        return self.location.coordinate_is_inside_location(user_latitude, user_longitude)
+
+    def check_user_is_granted_manager_access(self, user):
+        """
+        1. User is the creator of event, or
+        2. User is a volunteer and has been granted access by other granter
+        """
+        if user == self.get_creator():
+            return True
+
+        participation = self.get_participation_by_participant(user)
+        return isinstance(participation, EventVolunteerParticipation) and participation.get_granted_manager_access()
+
 
 class Project(Event):
     goal = models.FloatField()
     measurement_unit = models.CharField(max_length=30)
+
+    def get_type(self):
+        return 'project'
 
     def get_goal(self):
         return self.goal
 
     def get_measurement_unit(self):
         return self.measurement_unit
+
+    def add_contributor(self, contributor):
+        project_contribution = ProjectContribution.objects.create(
+            event=self,
+            contributor=contributor,
+        )
+
+        return project_contribution
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -186,21 +219,16 @@ class BaseEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class EventParticipationType(models.TextChoices):
-    PARTICIPANT = 'participant'
-    VOLUNTEER = 'volunteer'
-
-
-class EventParticipation(models.Model):
+class EventParticipation(PolymorphicModel):
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
-    registration_date = models.DateTimeField(auto_now=True)
+    registration_time = models.DateTimeField(auto_now=True)
 
     event_rating = models.SmallIntegerField(null=True)
     event_review = models.TextField(null=True)
-    does_attend = models.BooleanField(default=False)
 
-    participation_type = models.CharField(choices=EventParticipationType.choices)
+    check_in_time = models.DateTimeField(null=True)
+    check_out_time = models.DateTimeField(null=True)
 
     class Meta:
         indexes = [
@@ -208,4 +236,49 @@ class EventParticipation(models.Model):
         ]
 
     def get_participation_type(self):
-        return self.participation_type
+        return 'participant'
+
+    def check_in(self):
+        if self.check_in_time is not None:
+            raise InvalidCheckInCheckOutException(f'User already checked in at {self.check_in_time}')
+
+        self.check_in_time = datetime.datetime.utcnow()
+        self.save()
+
+    def check_out(self):
+        if self.check_in_time is None:
+            raise InvalidCheckInCheckOutException('Check in time does not exist')
+
+        if self.check_out_time is not None:
+            raise InvalidCheckInCheckOutException(f'User already checked out at {self.check_out_time}')
+
+        self.check_out_time = datetime.datetime.utcnow()
+        self.save()
+
+
+class EventVolunteerParticipation(EventParticipation):
+    granted_manager_access = models.BooleanField(default=False)
+
+    def get_participant_type(self):
+        return 'volunteer'
+
+    def get_granted_manager_access(self):
+        return self.granted_manager_access
+
+    def set_as_manager(self):
+        if self.check_in_time is None:
+            raise InvalidCheckInCheckOutException('User must check in before being granted a managerial role')
+
+        self.granted_manager_access = True
+        self.save()
+
+
+class ProjectContribution(models.Model):
+    event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
+    contributor = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+
+    event_rating = models.SmallIntegerField(null=True)
+    event_review = models.TextField(null=True)
+
+    contribution_time = models.DateTimeField(auto_now=True)
+

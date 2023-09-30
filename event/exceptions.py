@@ -1,0 +1,2 @@
+class InvalidCheckInCheckOutException(Exception):
+    pass

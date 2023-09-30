@@ -1,3 +1,4 @@
+import space.services.haversine
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
@@ -74,7 +75,7 @@ def _get_events_based_on_location(latitude, longitude):
         all_locations = Location.objects.all()
         sorted_locations = sorted(
             all_locations,
-            key=lambda l: space_utils.haversine(
+            key=lambda l: space.services.haversine.haversine(
                 latitude,
                 longitude,
                 l.latitude,
