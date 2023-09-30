@@ -1,15 +1,15 @@
-import json
-
 from django.views.decorators.http import require_POST
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
 from communalspace.decorators import firebase_authenticated
 from participation.services import (
+    contribution,
     participation,
     participation_attendance,
     volunteer_attendance,
 )
+
+import json
 
 
 @require_POST
@@ -167,4 +167,20 @@ def serve_volunteer_grant_managerial_role(request):
     return Response(data=response_data)
 
 
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_volunteer_mark_participant_contribution(request):
+    """
+    This view serves as the endpoint for volunteers to mark participant
+    contribution.
+    ----------------------------------------------------------
+    request-body must contain:
+    project_id: UUID string
+    contributor_user_id: string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
+    response_data = {'message': 'Participant contribution has been added successfully'}
+    return Response(data=response_data)
 

@@ -1,6 +1,6 @@
 # DELEGATION FUNCTION TO MARK CHECK IN OF VOLUNTEER AND PARTICIPANT
 # CHECK IN VOLUNTEER using delegation mechanism
-from .participation import validate_event_is_active
+from .participation_attendance import validate_event_is_on_going
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import RestrictedAccessException, InvalidRequestException
 from django.core.exceptions import ObjectDoesNotExist
@@ -8,7 +8,7 @@ from event.services import utils as event_utils
 from users.services import utils as user_utils
 
 
-def _validate_assisting_user_is_manager_of_event(event, assisting_user):
+def validate_assisting_user_is_manager_of_event(event, assisting_user):
     if not event.check_user_is_granted_manager_access(assisting_user):
         raise RestrictedAccessException('Assisting user has not been granted manager access')
 
@@ -28,8 +28,8 @@ def handle_volunteer_assisted_check_in(request_data, assisting_user):
     5. Check in user
     """
     event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    validate_event_is_active(event)
-    _validate_assisting_user_is_manager_of_event(event, assisting_user)
+    validate_event_is_on_going(event)
+    validate_assisting_user_is_manager_of_event(event, assisting_user)
 
     checking_in_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('volunteer_user_id'))
     participation = event.get_participation_by_participant(checking_in_user)
@@ -46,7 +46,7 @@ def handle_volunteer_self_check_out(request_data, user):
     3. Check out user
     """
     event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    validate_event_is_active(event)
+    validate_event_is_on_going(event)
 
     participation = event.get_participation_by_participant(user)
     _validate_user_is_a_volunteer(participation)
@@ -63,8 +63,8 @@ def handle_volunteer_grant_managerial_role(request_data, manager_user):
     5. Grant access to user as manager
     """
     event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    validate_event_is_active(event)
-    _validate_assisting_user_is_manager_of_event(event, manager_user)
+    validate_event_is_on_going(event)
+    validate_assisting_user_is_manager_of_event(event, manager_user)
 
     granted_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('volunteer_user_id'))
     participation = event.get_participation_by_participant(granted_user)

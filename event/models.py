@@ -59,6 +59,9 @@ class Event(PolymorphicModel):
 
     event_image_directory = models.TextField(null=True, default=None)
 
+    def get_type(self):
+        return 'event'
+
     def set_event_image(self, event_image_directory):
         self.event_image_directory = event_image_directory
         self.save()
@@ -125,6 +128,9 @@ class Event(PolymorphicModel):
     def is_active(self):
         return self.status in (EventStatus.SCHEDULED, EventStatus.ON_GOING)
 
+    def is_ongoing(self):
+        return self.status == EventStatus.ON_GOING
+
     def check_user_is_inside_event(self, user_latitude, user_longitude):
         return self.location.coordinate_is_inside_location(user_latitude, user_longitude)
 
@@ -144,11 +150,22 @@ class Project(Event):
     goal = models.FloatField()
     measurement_unit = models.CharField(max_length=30)
 
+    def get_type(self):
+        return 'project'
+
     def get_goal(self):
         return self.goal
 
     def get_measurement_unit(self):
         return self.measurement_unit
+
+    def add_contributor(self, contributor):
+        project_contribution = ProjectContribution.objects.create(
+            event=self,
+            contributor=contributor,
+        )
+
+        return project_contribution
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -254,4 +271,14 @@ class EventVolunteerParticipation(EventParticipation):
 
         self.granted_manager_access = True
         self.save()
+
+
+class ProjectContribution(models.Model):
+    event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
+    contributor = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+
+    event_rating = models.SmallIntegerField(null=True)
+    event_review = models.TextField(null=True)
+
+    contribution_time = models.DateTimeField(auto_now=True)
 
