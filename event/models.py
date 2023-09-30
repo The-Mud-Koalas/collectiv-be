@@ -255,6 +255,8 @@ class EventParticipation(PolymorphicModel):
     check_in_time = models.DateTimeField(null=True)
     check_out_time = models.DateTimeField(null=True)
 
+    has_left_forum = models.BooleanField(default=False)
+
     class Meta:
         indexes = [
             models.Index(fields=['event', 'participant'])
@@ -280,6 +282,9 @@ class EventParticipation(PolymorphicModel):
         self.check_out_time = datetime.datetime.utcnow()
         self.save()
 
+    def has_checked_in(self):
+        return self.check_in_time is not None
+
     def has_checked_out(self):
         return self.check_out_time is not None
 
@@ -291,6 +296,13 @@ class EventParticipation(PolymorphicModel):
         )
 
         return review
+
+    def get_has_left_forum(self):
+        return self.has_left_forum
+
+    def set_has_left_forum(self, has_left_forum):
+        self.has_left_forum = has_left_forum
+        self.save()
 
 
 class EventVolunteerParticipation(EventParticipation):

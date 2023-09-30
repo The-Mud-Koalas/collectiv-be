@@ -4,6 +4,7 @@ from .views import (
     serve_participation_self_check_in_confirmation,
     serve_participation_self_check_out_confirmation,
     serve_participation_automated_check_out,
+    serve_participant_volunteer_leave_events,
     serve_volunteer_assisted_check_in,
     serve_volunteer_grant_managerial_role,
     serve_volunteer_mark_participant_contribution,
@@ -25,4 +26,6 @@ urlpatterns = [
     path('volunteer/check-in/assisted/', serve_volunteer_assisted_check_in),
     path('volunteer/check-out/self/', serve_volunteer_self_check_out),
     path('volunteer/grant-managerial-role/', serve_volunteer_grant_managerial_role),
+
+    path('participant/delete/', serve_participant_volunteer_leave_events),
 ]
