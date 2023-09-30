@@ -27,6 +27,6 @@ def handle_volunteer_mark_participant_contribution(request_data, volunteer_user)
     validate_assisting_user_is_manager_of_event(project, volunteer_user)
 
     contributor = user_utils.get_user_by_id_or_raise_exception(request_data.get('contributor_user_id'))
-    project.add_contributor(contributor)
+    project.add_participant(contributor)
 
 

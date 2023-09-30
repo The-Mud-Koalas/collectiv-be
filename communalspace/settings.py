@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 
     'event',
     'participation',
+    'review',
     'space',
     'users',
 ]

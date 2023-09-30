@@ -25,4 +25,5 @@ urlpatterns = [
     path('space/', include('space.urls')),
     path('event/', include('event.urls')),
     path('participation/', include('participation.urls')),
+    path('review/', include('review.urls')),
 ]
