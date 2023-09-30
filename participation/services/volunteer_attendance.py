@@ -3,6 +3,7 @@
 from .participation_attendance import validate_event_is_on_going
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import RestrictedAccessException, InvalidRequestException
+from communalspace.firebase_admin import firebase as firebase_utils
 from django.core.exceptions import ObjectDoesNotExist
 from event.services import utils as event_utils
 from users.services import utils as user_utils
@@ -31,7 +32,11 @@ def handle_volunteer_assisted_check_in(request_data, assisting_user):
     validate_event_is_on_going(event)
     validate_assisting_user_is_manager_of_event(event, assisting_user)
 
-    checking_in_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('volunteer_user_id'))
+    checking_in_user_id = firebase_utils.get_user_id_from_email_or_phone_number(
+        request_data.get('volunteer_email_phone')
+    )
+
+    checking_in_user = user_utils.get_user_by_id_or_raise_exception(checking_in_user_id)
     participation = event.get_participation_by_participant(checking_in_user)
     _validate_user_is_a_volunteer(participation)
 
@@ -66,7 +71,8 @@ def handle_volunteer_grant_managerial_role(request_data, manager_user):
     validate_event_is_on_going(event)
     validate_assisting_user_is_manager_of_event(event, manager_user)
 
-    granted_user = user_utils.get_user_by_id_or_raise_exception(request_data.get('volunteer_user_id'))
+    volunteer_user_id = firebase_utils.get_user_id_from_email_or_phone_number(request_data.get('volunteer_email_phone'))
+    granted_user = user_utils.get_user_by_id_or_raise_exception(volunteer_user_id)
     participation = event.get_participation_by_participant(granted_user)
     _validate_user_is_a_volunteer(participation)
 

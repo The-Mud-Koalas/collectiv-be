@@ -118,7 +118,7 @@ def serve_volunteer_assisted_check_in(request):
     ----------------------------------------------------------
     request-body must contain:
     event_id: UUID string
-    volunteer_user_id: String
+    volunteer_email_phone: string
     """
     request_data = json.loads(request.body.decode('utf-8'))
     volunteer_attendance.handle_volunteer_assisted_check_in(request_data, request.user)
@@ -159,7 +159,7 @@ def serve_volunteer_grant_managerial_role(request):
     ----------------------------------------------------------
     request-body must contain:
     event_id: UUID string
-    volunteer_user_id: string
+    volunteer_email_phone: string
     """
     request_data = json.loads(request.body.decode('utf-8'))
     volunteer_attendance.handle_volunteer_grant_managerial_role(request_data, request.user)
@@ -177,7 +177,7 @@ def serve_volunteer_mark_participant_contribution(request):
     ----------------------------------------------------------
     request-body must contain:
     project_id: UUID string
-    contributor_user_id: string
+    contributor_email_phone: string
     """
     request_data = json.loads(request.body.decode('utf-8'))
     contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
