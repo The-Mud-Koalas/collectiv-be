@@ -155,7 +155,19 @@ class Event(PolymorphicModel):
 
 class Project(Event):
     goal = models.FloatField()
+    progress = models.FloatField(default=0)
     measurement_unit = models.CharField(max_length=30)
+
+    def increase_progress(self, amount_to_increase):
+        self.progress = self.progress + amount_to_increase
+        self.save()
+
+    def decrease_progress(self, amount_to_decrease):
+        if self.progress < amount_to_decrease:
+            raise ValueError('Amount to decrease must not exceed the current progress')
+
+        self.progress = self.progress - amount_to_decrease
+        self.save()
 
     def get_type(self):
         return 'project'

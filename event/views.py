@@ -208,5 +208,24 @@ def serve_update_event_status(request):
     return Response(data=response_data)
 
 
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_update_project_progress(request):
+    """
+    This view serves as the endpoint for project creator to update
+    the current progress of the project
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    amount_to_update: integer
+    type: increase/decrease
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    event_management.handle_update_project_progress(request_data, request.user)
+    response_data = {'message': 'Event progress is successfully updated'}
+    return Response(data=response_data)
+
+
 
 

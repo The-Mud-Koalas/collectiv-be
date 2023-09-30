@@ -7,7 +7,7 @@ from event.services import utils as event_utils
 from users.services import utils as user_utils
 
 
-def _validate_event_is_project(event):
+def validate_event_is_project(event):
     if event.get_type() != 'project':
         raise InvalidRequestException(f'Event with id {event.get_id()} is not a project')
 
@@ -23,7 +23,7 @@ def handle_volunteer_mark_participant_contribution(request_data, volunteer_user)
     """
     project = event_utils.get_event_by_id_or_raise_exception(request_data.get('project_id'))
     validate_event_is_on_going(project)
-    _validate_event_is_project(project)
+    validate_event_is_project(project)
     validate_assisting_user_is_manager_of_event(project, volunteer_user)
 
     contributor = user_utils.get_user_by_id_or_raise_exception(request_data.get('contributor_user_id'))
