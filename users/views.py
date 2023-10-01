@@ -1,10 +1,11 @@
+from .models import UserSerializer
+from .services import user
 from communalspace.decorators import firebase_authenticated
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
+from event.models import TagsSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from .models import UserSerializer
-from .services import user
 import json
 
 
@@ -40,6 +41,19 @@ def serve_get_user_data(request):
     return Response(data=response_data)
 
 
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_interests(request):
+    """
+    This view serves as the endpoint to get the list of user's
+    interests.
+    """
+    user_interests = user.handle_get_user_interest(request.user)
+    response_data = TagsSerializer(user_interests, many=True).data
+    return Response(data=response_data)
+
+
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
@@ -57,4 +71,8 @@ def serve_subscribe_to_tags(request):
         ]
     }
     """
+    request_data = json.loads(request.body.decode('utf-8'))
+    user.handle_subscribe_to_tags(request_data, request.user)
+    response_data = {'message': 'User interest is successfully updated'}
+    return Response(data=response_data)
 

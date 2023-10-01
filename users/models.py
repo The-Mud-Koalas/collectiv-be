@@ -75,6 +75,11 @@ class User(AbstractUser):
     def get_preferred_radius(self):
         return self.preferred_radius
 
+    def set_interests(self, interests):
+        self.interests.clear()
+        for interest in interests:
+            self.interests.add(interest)
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

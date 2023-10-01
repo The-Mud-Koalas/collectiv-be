@@ -9,6 +9,7 @@ from google.api_core import exceptions as google_exceptions
 from numbers import Number
 from space.services import utils as space_utils
 from . import utils
+from .utils import convert_tag_ids_to_tags
 from ..models import Event, Project
 
 
@@ -67,15 +68,6 @@ def _validate_create_event_request(request_data):
             raise InvalidRequestException('Tag ID must be a valid UUID string')
 
 
-def _convert_tag_ids_to_tags(tag_ids):
-    tags = []
-    for tag_id in tag_ids:
-        tag = utils.get_tag_by_id_or_raise_exception(tag_id)
-        tags.append(tag)
-
-    return tags
-
-
 def _create_event(request_data, event_space, event_tags, creator) -> Event:
     event_is_project = request_data.get('is_project')
 
@@ -114,7 +106,7 @@ def handle_create_event(request_data, user):
     _validate_create_event_request(request_data)
     request_data = app_utils.trim_all_request_attributes(request_data)
     event_space = space_utils.get_space_by_id_or_raise_exception(request_data.get('location_id'))
-    event_tags = _convert_tag_ids_to_tags(request_data.get('tags'))
+    event_tags = convert_tag_ids_to_tags(request_data.get('tags'))
     created_event = _create_event(request_data, event_space=event_space, event_tags=event_tags, creator=user)
     return created_event
 
