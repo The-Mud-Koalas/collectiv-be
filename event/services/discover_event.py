@@ -91,7 +91,7 @@ def _get_events_based_on_location(latitude, longitude):
 
 @catch_exception_and_convert_to_invalid_request_decorator((ValueError,))
 def handle_search_events(request_data):
-    latitude, longitude = space_utils.parse_coordinate(request_data)
+    latitude, longitude = space_utils.parse_coordinate_fail_silently(request_data)
     events = _get_events_based_on_location(latitude, longitude)
 
     if request_data.get('name') is not None:
