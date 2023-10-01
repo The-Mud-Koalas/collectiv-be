@@ -9,7 +9,7 @@ from participation.services import (
     volunteer_attendance,
     viewing_participation,
 )
-from event.models import BaseEventParticipationSerializer
+from event.models import BaseEventParticipationSerializer, ProjectContributionSerializer
 
 import json
 
@@ -278,4 +278,8 @@ def serve_get_user_contribution(request):
     This view serves as the endpoint to get the list of
     user's contribution.
     """
+    user_contributions = viewing_participation.handle_get_user_contribution(request.user)
+    response_data = ProjectContributionSerializer(user_contributions, many=True).data
+    return Response(data=response_data)
+
 
