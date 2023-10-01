@@ -218,8 +218,8 @@ def serve_get_user_past_participation(request):
     """
     request_data = request.GET
     past_participations = viewing_participation.handle_get_past_participations(
+        request_data,
         request.user,
-        participation_type=request_data.get('type')
     )
 
     response_data = BaseEventParticipationSerializer(past_participations, many=True).data
@@ -240,8 +240,8 @@ def serve_get_user_ongoing_participation(request):
     """
     request_data = request.GET
     ongoing_participations = viewing_participation.handle_get_ongoing_participations(
+        request_data,
         request.user,
-        participation_type=request_data.get('type')
     )
 
     response_data = BaseEventParticipationSerializer(ongoing_participations, many=True).data
@@ -262,9 +262,20 @@ def serve_get_user_future_participation(request):
     """
     request_data = request.GET
     future_participations = viewing_participation.handle_get_future_participations(
+        request_data,
         request.user,
-        participation_type=request_data.get('type')
     )
 
     response_data = BaseEventParticipationSerializer(future_participations, many=True).data
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_contribution(request):
+    """
+    This view serves as the endpoint to get the list of
+    user's contribution.
+    """
+

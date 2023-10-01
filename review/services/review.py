@@ -23,6 +23,9 @@ def _validate_participant_can_submit_review(participation):
     if not participation.has_checked_out():
         raise InvalidRequestException('Please check out from event before submitting review')
 
+    if participation.get_review() is not None:
+        raise InvalidRequestException('Review for participation has been previously added')
+
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_participant_submit_review(request_data, participant_user):
@@ -45,6 +48,11 @@ def handle_participant_submit_review(request_data, participant_user):
     _validate_participant_can_submit_review(participation)
 
     participation.create_review(request_data.get('event_rating'), request_data.get('event_comment'))
+
+
+def _validate_contributor_can_submit_review(contribution):
+    if contribution.get_review() is not None:
+        raise InvalidRequestException('Review for contribution has been previously added')
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))

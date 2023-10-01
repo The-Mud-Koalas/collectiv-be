@@ -314,6 +314,14 @@ class EventParticipation(PolymorphicModel):
         self.has_left_forum = has_left_forum
         self.save()
 
+    def get_review(self):
+        review = ParticipationVolunteeringReview.objects.filter(participation=self)
+        if len(review) > 0:
+            return review[0]
+
+        else:
+            return None
+
 
 class EventVolunteerParticipation(EventParticipation):
     granted_manager_access = models.BooleanField(default=False)
@@ -336,17 +344,23 @@ class ProjectContribution(models.Model):
     event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
     contributor = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
 
-    event_rating = models.SmallIntegerField(null=True)
-    event_review = models.TextField(null=True)
-
     contribution_time = models.DateTimeField(auto_now=True)
+    has_left_forum = models.BooleanField(default=False)
 
     def create_review(self, rating, comment):
-        return ContributionReview(
+        return ContributionReview.objects.create(
             contribution=self,
             event_rating=rating,
             event_comment=comment,
         )
+
+    def get_review(self):
+        review = ContributionReview.objects.filter(contribution=self)
+        if len(review) > 0:
+            return review[0]
+
+        else:
+            return None
 
 
 class EventParticipationSerializer(serializers.ModelSerializer):
@@ -383,3 +397,21 @@ class BaseEventParticipationSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventParticipation
         fields = '__all__'
+
+
+class ProjectContributionSerializer(serializers.ModelSerializer):
+    event_data = serializers.SerializerMethodField(method_name='get_event_data')
+
+    def get_event_data(self, event_participation):
+        return BaseEventSerializer(event_participation.event).data
+
+    class Meta:
+        model = EventParticipation
+        fields = [
+            'event_data',
+            'contribution_time',
+            'contributor',
+            'has_left_forum',
+        ]
+
+
