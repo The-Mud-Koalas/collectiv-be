@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET']  # NOSONAR
+SECRET_KEY = "os.environ['DJANGO_SECRET']"  # NOSONAR
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     'event',
+    'participation',
+    'review',
     'space',
     'users',
 ]
@@ -87,6 +89,8 @@ TEMPLATES = [
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'communalspace.exception_config.custom_exception_handler',
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 2,
 }
 
 WSGI_APPLICATION = 'communalspace.wsgi.application'
@@ -95,8 +99,22 @@ WSGI_APPLICATION = 'communalspace.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': dj_database_url.config(conn_max_age=600)
+# }
+
 DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600)
+ 'default': {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': 'postgres',
+    'USER': 'postgres',
+    'PASSWORD': 'postgres',
+    'HOST': 'localhost',
+    'PORT': '5432',
+    'OPTIONS': {
+            'options': '-c search_path=public'
+        },
+  },
 }
 
 
@@ -149,3 +167,6 @@ FIREBASE_APP = initialize_app(credential=FIREBASE_CREDENTIAL)
 # Google Bucket Storage
 GOOGLE_BUCKET_BASE_DIRECTORY = 'event-images'
 GOOGLE_STORAGE_BUCKET_NAME = 'artifacts.mud-koalas-communal-space.appspot.com'
+
+# Pagination Settings
+DEFAULT_PAGE_LIMIT = 10

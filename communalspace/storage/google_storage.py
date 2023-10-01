@@ -9,6 +9,12 @@ def upload_file_to_google_bucket(destination_file_name, bucket_name, file):
     blob.upload_from_file(file_obj=file, rewind=True)
 
 
+def delete_file_from_google_bucket(file_cloud_directory, bucket_name):
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(bucket_name)
+    bucket.delete_blob(file_cloud_directory)
+
+
 def download_file_from_google_bucket(file_cloud_directory, bucket_name, target_file_name, content_type):
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(bucket_name)

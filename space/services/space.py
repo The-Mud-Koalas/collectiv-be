@@ -1,6 +1,6 @@
 from communalspace.exceptions import InvalidRequestException
 from numbers import Number
-from ..models import Space
+from ..models import Location
 from . import utils
 
 
@@ -24,15 +24,15 @@ def _validate_create_location_request(request_data: dict):
         raise InvalidRequestException('Location longitude must be between -180 and 180')
 
 
-def _create_location_from_request_data(request_data: dict) -> Space:
-    return Space.objects.create(
+def _create_location_from_request_data(request_data: dict) -> Location:
+    return Location.objects.create(
         name=request_data.get('name'),
         latitude=request_data.get('latitude'),
         longitude=request_data.get('longitude')
     )
 
 
-def handle_get_or_create_location(request_data: dict) -> Space:
+def handle_get_or_create_location(request_data: dict) -> Location:
     _validate_create_location_request(request_data)
     found_location = utils.get_space_from_coordinates(request_data.get('latitude'), request_data.get('longitude'))
 
