@@ -40,3 +40,12 @@ def get_category_from_name(category_name):
         return matching_category[0]
 
     return None
+
+
+def convert_tag_ids_to_tags(tag_ids):
+    tags = []
+    for tag_id in tag_ids:
+        tag = get_tag_by_id_or_raise_exception(tag_id)
+        tags.append(tag)
+
+    return tags
