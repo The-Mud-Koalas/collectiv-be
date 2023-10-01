@@ -265,6 +265,16 @@ class EventParticipation(PolymorphicModel):
     def get_participation_type(self):
         return 'participant'
 
+    def get_status(self):
+        if self.check_out_time is not None:
+            return 'past'
+
+        if self.check_in_time is not None and self.check_out_time is None:
+            return 'ongoing'
+
+        if self.check_in_time is None:
+            return 'future'
+
     def check_in(self):
         if self.check_in_time is not None:
             raise InvalidCheckInCheckOutException(f'User already checked in at {self.check_in_time}')
@@ -339,3 +349,37 @@ class ProjectContribution(models.Model):
         )
 
 
+class EventParticipationSerializer(serializers.ModelSerializer):
+    event_data = serializers.SerializerMethodField(method_name='get_event_data')
+    status = serializers.SerializerMethodField(method_name='get_participation_status')
+
+    def get_participation_status(self, event_participation):
+        return event_participation.get_status()
+
+    def get_event_data(self, event_participation):
+        return BaseEventSerializer(event_participation.event).data
+
+    class Meta:
+        model = EventParticipation
+        fields = [
+            'event_data',
+            'registration_time',
+            'status',
+            'check_in_time',
+            'check_out_time',
+            'participant',
+            'has_left_forum',
+        ]
+
+
+class BaseEventParticipationSerializer(serializers.ModelSerializer):
+    def to_representation(self, event_participation):
+        serialized_data = EventParticipationSerializer(event_participation).data
+        if isinstance(event_participation, EventVolunteerParticipation):
+            serialized_data['granted_manager_access'] = event_participation.get_granted_manager_access()
+
+        return serialized_data
+
+    class Meta:
+        model = EventParticipation
+        fields = '__all__'

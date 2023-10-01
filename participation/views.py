@@ -1,4 +1,4 @@
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from communalspace.decorators import firebase_authenticated
@@ -7,7 +7,9 @@ from participation.services import (
     participation,
     participation_attendance,
     volunteer_attendance,
+    viewing_participation,
 )
+from event.models import BaseEventParticipationSerializer
 
 import json
 
@@ -202,3 +204,67 @@ def serve_participant_volunteer_leave_events(request):
     return Response(data=response_data)
 
 
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_past_participation(request):
+    """
+    This view serves as the endpoint for participant
+    to retrieve the list of events that they have participated in.
+    (Has checked out)
+    ----------------------------------------------------------
+    request-param must contain:
+    type: participant/volunteer
+    """
+    request_data = request.GET
+    past_participations = viewing_participation.handle_get_past_participations(
+        request.user,
+        participation_type=request_data.get('type')
+    )
+
+    response_data = BaseEventParticipationSerializer(past_participations, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_ongoing_participation(request):
+    """
+    This view serves as the endpoint for participant
+    to retrieve the list of events that they are currently
+    participating in (has checked in but has not checked out).
+    ----------------------------------------------------------
+    request-param must contain:
+    type: participant/volunteer
+    """
+    request_data = request.GET
+    ongoing_participations = viewing_participation.handle_get_ongoing_participations(
+        request.user,
+        participation_type=request_data.get('type')
+    )
+
+    response_data = BaseEventParticipationSerializer(ongoing_participations, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_future_participation(request):
+    """
+    This view serves as the endpoint for participant
+    to retrieve the list of events that they will participate
+    in on the future (has not checked in).
+    ----------------------------------------------------------
+    request-param must contain:
+    type: participant/volunteer
+    """
+    request_data = request.GET
+    future_participations = viewing_participation.handle_get_future_participations(
+        request.user,
+        participation_type=request_data.get('type')
+    )
+
+    response_data = BaseEventParticipationSerializer(future_participations, many=True).data
+    return Response(data=response_data)
