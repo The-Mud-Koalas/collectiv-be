@@ -158,7 +158,14 @@ class Project(Event):
     progress = models.FloatField(default=0)
     measurement_unit = models.CharField(max_length=30)
 
+    def get_transactions(self):
+        return self.transactionhistory_set.all()
+
     def increase_progress(self, amount_to_increase):
+        TransactionHistory.objects.create(
+            project=self,
+            transaction_value=amount_to_increase
+        )
         self.progress = self.progress + amount_to_increase
         self.save()
 
@@ -166,6 +173,10 @@ class Project(Event):
         if self.progress < amount_to_decrease:
             raise ValueError('Amount to decrease must not exceed the current progress')
 
+        TransactionHistory.objects.create(
+            project=self,
+            transaction_value=-amount_to_decrease
+        )
         self.progress = self.progress - amount_to_decrease
         self.save()
 
@@ -175,18 +186,21 @@ class Project(Event):
     def get_goal(self):
         return self.goal
 
+    def get_progress(self):
+        return self.progress
+
     def get_measurement_unit(self):
         return self.measurement_unit
 
-    def add_participant(self, participant):
+    def add_contributor(self, contributor):
         event_participation = ProjectContribution.objects.create(
             event=self,
-            contributor=participant,
+            contributor=contributor,
         )
 
         return event_participation
 
-    def get_participation_by_participant(self, participant):
+    def get_contributor_by_participant(self, participant):
         matching_participation = self.projectcontribution_set.filter(contributor=participant)
 
         if len(matching_participation) > 0:
@@ -194,6 +208,18 @@ class Project(Event):
 
         else:
             return None
+
+
+class TransactionHistory(models.Model):
+    project = models.ForeignKey('event.Project', on_delete=models.CASCADE)
+    transaction_time = models.DateTimeField(auto_now=True)
+    transaction_value = models.FloatField()
+
+
+class TransactionHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransactionHistory
+        fields = '__all__'
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -239,6 +265,8 @@ class BaseEventSerializer(serializers.ModelSerializer):
         if isinstance(event, Project):
             serialized_data['goal'] = event.get_goal()
             serialized_data['measurement_unit'] = event.get_measurement_unit()
+            serialized_data['progress'] = event.get_progress()
+            serialized_data['transactions'] = TransactionHistorySerializer(event.get_transactions(), many=True).data
 
         return serialized_data
 
@@ -326,7 +354,7 @@ class EventParticipation(PolymorphicModel):
 class EventVolunteerParticipation(EventParticipation):
     granted_manager_access = models.BooleanField(default=False)
 
-    def get_participant_type(self):
+    def get_participation_type(self):
         return 'volunteer'
 
     def get_granted_manager_access(self):
@@ -406,7 +434,7 @@ class ProjectContributionSerializer(serializers.ModelSerializer):
         return BaseEventSerializer(event_participation.event).data
 
     class Meta:
-        model = EventParticipation
+        model = ProjectContribution
         fields = [
             'event_data',
             'contribution_time',

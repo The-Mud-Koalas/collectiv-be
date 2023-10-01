@@ -22,6 +22,8 @@ def _validate_participation_registration(event, user):
             f'User has been registered as {user_event_participation.get_participation_type()} in the event'
         )
 
+
+def _validate_prevent_participation_registration_to_project(event):
     if event.get_type() == 'project':
         raise InvalidRequestException('Registration to project is not available')
 
@@ -30,6 +32,7 @@ def _validate_participation_registration(event, user):
 def handle_register_user_participation_to_event(request_data, user):
     event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
     _validate_participation_registration(event, user)
+    _validate_prevent_participation_registration_to_project(event)
     event.add_participant(user)
 
 
