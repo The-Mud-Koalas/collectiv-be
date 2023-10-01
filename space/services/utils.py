@@ -60,3 +60,10 @@ def parse_coordinate(lat_long_data) -> Tuple[float, float]:
 
     return latitude, longitude
 
+
+def parse_coordinate_fail_silently(lat_long_data):
+    try:
+        return parse_coordinate(lat_long_data)
+
+    except:
+        return None, None

@@ -158,7 +158,14 @@ class Project(Event):
     progress = models.FloatField(default=0)
     measurement_unit = models.CharField(max_length=30)
 
+    def get_transactions(self):
+        return self.transactionhistory_set.all()
+
     def increase_progress(self, amount_to_increase):
+        TransactionHistory.objects.create(
+            project=self,
+            transaction_value=amount_to_increase
+        )
         self.progress = self.progress + amount_to_increase
         self.save()
 
@@ -166,6 +173,10 @@ class Project(Event):
         if self.progress < amount_to_decrease:
             raise ValueError('Amount to decrease must not exceed the current progress')
 
+        TransactionHistory.objects.create(
+            project=self,
+            transaction_value=-amount_to_decrease
+        )
         self.progress = self.progress - amount_to_decrease
         self.save()
 
@@ -175,18 +186,21 @@ class Project(Event):
     def get_goal(self):
         return self.goal
 
+    def get_progress(self):
+        return self.progress
+
     def get_measurement_unit(self):
         return self.measurement_unit
 
-    def add_participant(self, participant):
+    def add_contributor(self, contributor):
         event_participation = ProjectContribution.objects.create(
             event=self,
-            contributor=participant,
+            contributor=contributor,
         )
 
         return event_participation
 
-    def get_participation_by_participant(self, participant):
+    def get_contributor_by_participant(self, participant):
         matching_participation = self.projectcontribution_set.filter(contributor=participant)
 
         if len(matching_participation) > 0:
@@ -194,6 +208,18 @@ class Project(Event):
 
         else:
             return None
+
+
+class TransactionHistory(models.Model):
+    project = models.ForeignKey('event.Project', on_delete=models.CASCADE)
+    transaction_time = models.DateTimeField(auto_now=True)
+    transaction_value = models.FloatField()
+
+
+class TransactionHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TransactionHistory
+        fields = '__all__'
 
 
 class EventSerializer(serializers.ModelSerializer):
@@ -239,6 +265,8 @@ class BaseEventSerializer(serializers.ModelSerializer):
         if isinstance(event, Project):
             serialized_data['goal'] = event.get_goal()
             serialized_data['measurement_unit'] = event.get_measurement_unit()
+            serialized_data['progress'] = event.get_progress()
+            serialized_data['transactions'] = TransactionHistorySerializer(event.get_transactions(), many=True).data
 
         return serialized_data
 
@@ -264,6 +292,16 @@ class EventParticipation(PolymorphicModel):
 
     def get_participation_type(self):
         return 'participant'
+
+    def get_status(self):
+        if self.check_out_time is not None:
+            return 'past'
+
+        if self.check_in_time is not None and self.check_out_time is None:
+            return 'ongoing'
+
+        if self.check_in_time is None:
+            return 'future'
 
     def check_in(self):
         if self.check_in_time is not None:
@@ -304,11 +342,19 @@ class EventParticipation(PolymorphicModel):
         self.has_left_forum = has_left_forum
         self.save()
 
+    def get_review(self):
+        review = ParticipationVolunteeringReview.objects.filter(participation=self)
+        if len(review) > 0:
+            return review[0]
+
+        else:
+            return None
+
 
 class EventVolunteerParticipation(EventParticipation):
     granted_manager_access = models.BooleanField(default=False)
 
-    def get_participant_type(self):
+    def get_participation_type(self):
         return 'volunteer'
 
     def get_granted_manager_access(self):
@@ -326,16 +372,74 @@ class ProjectContribution(models.Model):
     event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
     contributor = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
 
-    event_rating = models.SmallIntegerField(null=True)
-    event_review = models.TextField(null=True)
-
     contribution_time = models.DateTimeField(auto_now=True)
+    has_left_forum = models.BooleanField(default=False)
 
     def create_review(self, rating, comment):
-        return ContributionReview(
+        return ContributionReview.objects.create(
             contribution=self,
             event_rating=rating,
             event_comment=comment,
         )
+
+    def get_review(self):
+        review = ContributionReview.objects.filter(contribution=self)
+        if len(review) > 0:
+            return review[0]
+
+        else:
+            return None
+
+
+class EventParticipationSerializer(serializers.ModelSerializer):
+    event_data = serializers.SerializerMethodField(method_name='get_event_data')
+    status = serializers.SerializerMethodField(method_name='get_participation_status')
+
+    def get_participation_status(self, event_participation):
+        return event_participation.get_status()
+
+    def get_event_data(self, event_participation):
+        return BaseEventSerializer(event_participation.event).data
+
+    class Meta:
+        model = EventParticipation
+        fields = [
+            'event_data',
+            'registration_time',
+            'status',
+            'check_in_time',
+            'check_out_time',
+            'participant',
+            'has_left_forum',
+        ]
+
+
+class BaseEventParticipationSerializer(serializers.ModelSerializer):
+    def to_representation(self, event_participation):
+        serialized_data = EventParticipationSerializer(event_participation).data
+        if isinstance(event_participation, EventVolunteerParticipation):
+            serialized_data['granted_manager_access'] = event_participation.get_granted_manager_access()
+
+        return serialized_data
+
+    class Meta:
+        model = EventParticipation
+        fields = '__all__'
+
+
+class ProjectContributionSerializer(serializers.ModelSerializer):
+    event_data = serializers.SerializerMethodField(method_name='get_event_data')
+
+    def get_event_data(self, event_participation):
+        return BaseEventSerializer(event_participation.event).data
+
+    class Meta:
+        model = ProjectContribution
+        fields = [
+            'event_data',
+            'contribution_time',
+            'contributor',
+            'has_left_forum',
+        ]
 
 

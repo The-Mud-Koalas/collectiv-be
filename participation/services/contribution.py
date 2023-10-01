@@ -13,6 +13,11 @@ def validate_event_is_project(event):
         raise InvalidRequestException(f'Event with id {event.get_id()} is not a project')
 
 
+def validate_contributor_has_not_contributed(project, contributor):
+    if project.get_contributor_by_participant(contributor) is not None:
+        raise InvalidRequestException('Contributor has contributed to the project')
+
+
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_volunteer_mark_participant_contribution(request_data, volunteer_user):
     """
@@ -30,8 +35,9 @@ def handle_volunteer_mark_participant_contribution(request_data, volunteer_user)
     contributor_user_id = firebase_utils.get_user_id_from_email_or_phone_number(
         request_data.get('contributor_email_phone')
     )
-
     contributor = user_utils.get_user_by_id_or_raise_exception(contributor_user_id)
-    project.add_participant(contributor)
+
+    validate_contributor_has_not_contributed(project, contributor)
+    project.add_contributor(contributor)
 
 

@@ -38,3 +38,23 @@ def serve_get_user_data(request):
     """
     response_data = UserSerializer(request.user).data
     return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_subscribe_to_tags(request):
+    """
+    This view serves as the endpoint to update user subscribed tags.
+    ----------------------------------------------------------
+    request-body must contain:
+    tags: List of tag IDs
+
+    {
+        "tags": [
+            "b2a602fa-656a-4a26-adcd-9ca2b77859f1",
+            "3b8a53b4-522c-42b1-82e5-35c79391fc96",
+        ]
+    }
+    """
+
