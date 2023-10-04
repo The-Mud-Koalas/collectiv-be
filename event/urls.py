@@ -10,7 +10,7 @@ from .views import (
     serve_search_events,
     serve_upload_event_image,
     serve_update_event_status,
-    serve_update_project_progress,
+    serve_update_project_progress
 )
 
 
@@ -25,5 +25,5 @@ urlpatterns = [
     path('status/update/', serve_update_event_status),
     path('progress/update/', serve_update_project_progress),
     path('tags/', serve_get_all_tags),
-    path('tags/get-or-create/multiple/', serve_get_or_create_tags),
+    path('tags/get-or-create/multiple/', serve_get_or_create_tags)
 ]
