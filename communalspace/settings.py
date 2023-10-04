@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "os.environ['DJANGO_SECRET']"  # NOSONAR
+SECRET_KEY = os.environ['DJANGO_SECRET']  # NOSONAR
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -100,18 +100,8 @@ WSGI_APPLICATION = 'communalspace.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# DATABASES = {
-#     'default': dj_database_url.config(conn_max_age=600)
-# }
 DATABASES = {
- 'default': {
-    'ENGINE': 'django.db.backends.postgresql',
-    'NAME': "postgres",
-    'USER': "postgres",
-    'PASSWORD': "postgres",
-    'HOST': 'localhost',
-    'PORT': '5432',
-    }
+    'default': dj_database_url.config(conn_max_age=600)
 }
 
 
