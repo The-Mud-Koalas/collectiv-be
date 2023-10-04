@@ -13,7 +13,7 @@ from .utils import convert_tag_ids_to_tags
 from ..models import Event, Project
 
 
-def _validate_create_event_request(request_data):
+def validate_create_event_request(request_data):
     if not isinstance(request_data.get('name'), str):
         raise InvalidRequestException('Event name must be a string')
 
