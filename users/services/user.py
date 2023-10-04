@@ -1,4 +1,7 @@
+from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
+from event.services import utils as event_utils
+from django.core.exceptions import ObjectDoesNotExist
 
 
 def _validate_update_user_data_request(request_data):
@@ -37,4 +40,17 @@ def handle_update_user_data(user, request_data):
     _update_user_data(user, request_data)
 
 
+def handle_get_user_interest(user):
+    return user.get_interests()
 
+
+def _validate_subscribe_to_tags_request(request_data):
+    if not isinstance(request_data.get('tags'), list):
+        raise InvalidRequestException('Tags must be a list (of tag IDs)')
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_subscribe_to_tags(request_data, user):
+    _validate_subscribe_to_tags_request(request_data)
+    interests = event_utils.convert_tag_ids_to_tags(request_data.get('tags'))
+    user.set_interests(interests)
