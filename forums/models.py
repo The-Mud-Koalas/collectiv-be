@@ -1,10 +1,12 @@
+import uuid
 from django.db import models
 from rest_framework import serializers
-
 from event.models import Event
 
 class Forum(models.Model):
+    id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
+
 class ForumPost(models.Model):
     content = models.TextField()
     author = models.ForeignKey('users.User', on_delete=models.CASCADE)
@@ -28,9 +30,6 @@ class ForumSerializer(serializers.ModelSerializer):
     class Meta:
         model = Forum
         fields = ['id', 'event', 'event_name', 'type_display']
-
-
-
 
 class ForumPostSerializer(serializers.ModelSerializer):
     forum_title = serializers.ReadOnlyField(source='forum.title')
