@@ -3,7 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from communalspace import utils as app_utils
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
-from django.contrib.auth.models import User
+from users.models import User
 from forums.models import Forum
 from forums.models import ForumPost
 
@@ -12,8 +12,9 @@ def _validate_create_forum_post_request(request_data):
     if not isinstance(request_data.get('content'), str) or not request_data.get('content').strip():
         raise InvalidRequestException('Content must be a non-empty string.')
 
-    if not app_utils.is_valid_uuid_string(request_data.get('author_id')):
-        raise InvalidRequestException('Author ID must be a valid UUID string.')
+    author_id = request_data.get('author_id')
+    if not isinstance(author_id, str) or len(author_id) > 30:
+        raise InvalidRequestException('Author ID must be a valid string of max length 30.')
 
     if not app_utils.is_valid_uuid_string(request_data.get('forum_id')):
         raise InvalidRequestException('Forum ID must be a valid UUID string.')

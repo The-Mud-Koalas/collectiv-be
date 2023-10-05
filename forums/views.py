@@ -37,8 +37,9 @@ def serve_create_forum_post(request):
 @firebase_authenticated()
 @transaction.atomic()
 def upvote_forum_post(request):
+    print(request.user)
     post_id = request.data.get('post_id')
-    user_id = request.user.id
+    user_id = request.user
 
     updated_post = upvote_post(post_id, user_id)
     response_data = ForumPostSerializer(updated_post).data
@@ -51,7 +52,7 @@ def upvote_forum_post(request):
 @transaction.atomic()
 def downvote_forum_post(request):
     post_id = request.data.get('post_id')
-    user_id = request.user.id
+    user_id = request.user
 
     updated_post = downvote_post(post_id, user_id)
     response_data = ForumPostSerializer(updated_post).data

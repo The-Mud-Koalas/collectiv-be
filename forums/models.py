@@ -8,6 +8,7 @@ class Forum(models.Model):
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
 
 class ForumPost(models.Model):
+    id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     content = models.TextField()
     author = models.ForeignKey('users.User', on_delete=models.CASCADE)
     forum = models.ForeignKey('forums.Forum', on_delete=models.CASCADE)
@@ -26,15 +27,16 @@ class EventSerializer(serializers.ModelSerializer):
 class ForumSerializer(serializers.ModelSerializer):
     event_name = serializers.ReadOnlyField(source='event.name')
     type_display = serializers.CharField(source='get_type_display', read_only=True)
-
     class Meta:
         model = Forum
         fields = ['id', 'event', 'event_name', 'type_display']
 
 class ForumPostSerializer(serializers.ModelSerializer):
-    forum_title = serializers.ReadOnlyField(source='forum.title')
     author_name = serializers.SerializerMethodField()
 
     class Meta:
         model = ForumPost
-        fields = ['id', 'content', 'author_name', 'forum', 'forum_title', 'posted_at', 'is_anonymous', 'vote_count']
+        fields = ['id', 'content', 'author', 'author_name', 'forum', 'posted_at', 'is_anonymous', 'vote_count', 'upvoters', 'downvoters']
+
+    def get_author_name(self, obj):
+        return obj.author.full_name
