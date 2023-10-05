@@ -147,7 +147,7 @@ def serve_get_event_image_by_id(request, event_id):
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def serve_update_event(request):
+def serve_update_event(request, event_id):
     """
     This view serves as the endpoint to update event.
     ----------------------------------------------------------
@@ -168,11 +168,12 @@ def serve_update_event(request):
 
     event_image: Image Blob
     """
-    request_data = request.POST.dict()
+    request_data = request.data
     request_file = request.FILES.get('event_image')
-    updated_event = update_event.handle_update_event(request_data, request_file, user=request.user)
+    updated_event = update_event.handle_update_event(event_id, request_data, request_file, request.user)
     response_data = BaseEventSerializer(updated_event).data
     return Response(data=response_data)
+
 
 @require_GET
 @api_view(['GET'])

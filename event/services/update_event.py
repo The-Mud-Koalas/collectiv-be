@@ -26,7 +26,7 @@ def _update_event(event, request_data, event_space, event_tags, creator) -> Even
         event.measurement_unit = request_data.get('goal_measurement_unit', event.measurement_unit)
 
     if event_tags:
-        event.clear_tags()
+        event.tags.clear()
         for tag in event_tags:
             event.add_tags(tag)
 
@@ -35,14 +35,14 @@ def _update_event(event, request_data, event_space, event_tags, creator) -> Even
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
-def handle_update_event(request_data, request_file, creator) -> Event:
+def handle_update_event(event_id, request_data, request_file, user) -> Event:
     validate_create_event_request(request_data)
 
-    event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    event = utils.get_event_by_id_or_raise_exception(event_id)
     event_space = space_utils.get_space_by_id_or_raise_exception(request_data.get('location_id'))
     event_tags = convert_tag_ids_to_tags(request_data.get('tags'))
 
     if request_file:
         event.image = request_file
 
-    return _update_event(event, request_data, event_space, event_tags, creator)
+    return _update_event(event, request_data, event_space, event_tags, user)

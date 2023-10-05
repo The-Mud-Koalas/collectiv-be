@@ -27,6 +27,6 @@ urlpatterns = [
     path('status/update/', serve_update_event_status),
     path('progress/update/', serve_update_project_progress),
     path('tags/', serve_get_all_tags),
-    path('update/', serve_update_event),
+    path('update/<str:event_id>/', serve_update_event),
     path('tags/get-or-create/multiple/', serve_get_or_create_tags),
 ]

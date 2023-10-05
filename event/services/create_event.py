@@ -72,6 +72,7 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
     event_is_project = request_data.get('is_project')
 
     if event_is_project:
+        print(request_data.get('name'))
         new_event = Project.objects.create(
             name=request_data.get('name'),
             description=request_data.get('description'),
@@ -103,7 +104,7 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_create_event(request_data, user):
-    _validate_create_event_request(request_data)
+    validate_create_event_request(request_data)
     request_data = app_utils.trim_all_request_attributes(request_data)
     event_space = space_utils.get_space_by_id_or_raise_exception(request_data.get('location_id'))
     event_tags = convert_tag_ids_to_tags(request_data.get('tags'))
