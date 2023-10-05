@@ -5,7 +5,7 @@ from .views import (
 
 
 urlpatterns = [
-    path('create/', serve_create_forum_post),
-    path('upvote/', upvote_forum_post),
-    path('downvote/', downvote_forum_post),
+    path('<str:forum_id>/post/', serve_create_forum_post),
+    path('<str:post_id>/upvote/', upvote_forum_post),
+    path('<str:post_id>/downvote/', downvote_forum_post),
 ]

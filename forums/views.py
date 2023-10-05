@@ -15,7 +15,7 @@ from .services.vote_post import upvote_post, downvote_post
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def serve_create_forum_post(request):
+def serve_create_forum_post(request, forum_id):
     """
     This view serves as the endpoint to create a forum post.
     ----------------------------------------------------------
@@ -26,8 +26,10 @@ def serve_create_forum_post(request):
 
     * The user information will be taken from the firebase authentication.
     """
+    author_id = request.user
+
     request_data = json.loads(request.body.decode('utf-8'))
-    created_post = create_post.handle_create_forum_post(request_data, user=request.user)
+    created_post = create_post.handle_create_forum_post(request_data, author_id, forum_id)
     response_data = ForumPostSerializer(created_post).data
     return Response(data=response_data)
 
@@ -36,9 +38,7 @@ def serve_create_forum_post(request):
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def upvote_forum_post(request):
-    print(request.user)
-    post_id = request.data.get('post_id')
+def upvote_forum_post(request, post_id):
     user_id = request.user
 
     updated_post = upvote_post(post_id, user_id)
@@ -50,8 +50,7 @@ def upvote_forum_post(request):
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def downvote_forum_post(request):
-    post_id = request.data.get('post_id')
+def downvote_forum_post(request, post_id):
     user_id = request.user
 
     updated_post = downvote_post(post_id, user_id)

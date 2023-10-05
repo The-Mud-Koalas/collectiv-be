@@ -8,15 +8,11 @@ from forums.models import Forum
 from forums.models import ForumPost
 
 
-def _validate_create_forum_post_request(request_data):
+def _validate_create_forum_post_request(request_data, author_id, forum_id):
     if not isinstance(request_data.get('content'), str) or not request_data.get('content').strip():
         raise InvalidRequestException('Content must be a non-empty string.')
 
-    author_id = request_data.get('author_id')
-    if not isinstance(author_id, str) or len(author_id) > 30:
-        raise InvalidRequestException('Author ID must be a valid string of max length 30.')
-
-    if not app_utils.is_valid_uuid_string(request_data.get('forum_id')):
+    if not app_utils.is_valid_uuid_string(forum_id):  # check the forum_id from URL
         raise InvalidRequestException('Forum ID must be a valid UUID string.')
 
     if not isinstance(request_data.get('is_anonymous', False), bool):
@@ -34,12 +30,13 @@ def _create_forum_post(request_data, author, forum) -> ForumPost:
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
-def handle_create_forum_post(request_data, user):
-    _validate_create_forum_post_request(request_data)
+def handle_create_forum_post(request_data, author_id, forum_id):
+    _validate_create_forum_post_request(request_data, author_id, forum_id)
     request_data = app_utils.trim_all_request_attributes(request_data)
 
-    author = User.objects.get(pk=request_data.get('author_id'))
-    forum = Forum.objects.get(pk=request_data.get('forum_id'))
+    author = User.objects.get(pk=author_id)
+    forum = Forum.objects.get(pk=forum_id)
 
     created_post = _create_forum_post(request_data, author=author, forum=forum)
     return created_post
+
