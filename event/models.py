@@ -268,6 +268,7 @@ class EventSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'min_num_of_volunteers',
+            'status',
             'event_location',
             'event_category',
             'event_creator_id',
