@@ -1,7 +1,7 @@
 from communalspace.settings import DEFAULT_PAGE_LIMIT
 from datetime import datetime
 from django.http import HttpResponse
-from typing import Any
+from typing import Any, Union
 from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
@@ -102,7 +102,8 @@ def parse_limit_page(limit, page):
     try:
         limit = int(limit)
         page = int(page)
-    except ValueError:
+
+    except (ValueError, TypeError):
         limit = DEFAULT_PAGE_LIMIT
         page = 1
 

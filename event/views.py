@@ -171,8 +171,36 @@ def serve_get_nearby_events(request):
     longitude: float
     """
     request_data = request.GET
-    nearby_events = discover_event.handle_get_interest_based_nearby_events(request_data, request.user)
+    nearby_events = discover_event.handle_get_interest_based_nearby_active_events(request_data, request.user)
     response_data = BaseEventSerializer(nearby_events, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_events_per_location(request, location_id):
+    """
+    This view serves as the endpoint to display the list of events located in a location.
+    The list of events is queryable based on the event type (event/project), status,
+    and the categories.
+    ----------------------------------------------------------
+    request-param must contain:
+    location_id: UUID string
+
+    request-param may contain:
+    type: initiative/project
+    status: scheduled, cancelled, completed, ongoing
+    category_id: UUID string
+    tags: comma separated strings (example: go-green,body-building)
+
+    limit: integer (number of results to be displayed in one fetch)
+    page: integer
+    """
+    request_data = request.GET
+    matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
+    limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
+    paginated_result = paginators.paginate_result(matching_events_of_location, limit, page_number)
+    response_data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
     return Response(data=response_data)
 
 
@@ -190,8 +218,12 @@ def serve_search_events(request):
     request-param may contain:
     latitude: float
     longitude: float
-    name: string
+
+    type: initiative/project
+    status: string
+    category_id: UUID string
     tags: comma separated strings (example: go-green,body-building)
+    location_id: UUID string
 
     limit: integer (number of results to be displayed in one fetch)
     page: integer
