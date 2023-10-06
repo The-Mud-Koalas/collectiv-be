@@ -122,8 +122,9 @@ def handle_get_events_per_location(location_id, request_data):
     if request_data.get('category_id') is not None:
         events_of_space = events_of_space.filter(category__id=request_data.get('category_id'))
 
-    if request_data.get('tag_id') is not None:
-        events_of_space = events_of_space.filter(tags__id=request_data.get('tag_id'))
+    if request_data.get('tags') is not None:
+        tag_names = request_data.get('tags').split(',')
+        events_of_space = events_of_space.filter(tags__name__in=tag_names)
 
     return events_of_space
 

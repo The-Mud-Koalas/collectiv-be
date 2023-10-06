@@ -219,7 +219,7 @@ def serve_get_events_per_location(request, location_id):
     type: event/project
     status: scheduled, cancelled, completed, ongoing
     category_id: UUID string
-    tag_id: UUID string
+    tags: comma separated strings (example: go-green,body-building)
     """
     request_data = request.GET
     matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
