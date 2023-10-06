@@ -77,3 +77,18 @@ def serve_subscribe_or_neglect_location(request):
     response_data = {'message': 'Location preference is successfully saved'}
     return Response(data=response_data)
 
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_list_of_subscribed_locations(request):
+    """
+    This view serves as the endpoint to get the list of user's
+    subscribed locations.
+    ----------------------------------------------------------
+    request-data must contain:
+    None
+    """
+    subscribed_locations = discover_space.handle_get_list_of_subscribed_locations(request.user)
+    response_data = LocationSerializer(subscribed_locations, many=True).data
+    return Response(data=response_data)
