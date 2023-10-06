@@ -8,6 +8,14 @@ from .services import space, discover_space
 import json
 
 
+@require_GET
+@api_view(['GET'])
+def serve_get_all_locations(request):
+    all_locations = space.handle_get_all_locations()
+    response_data = LocationSerializer(all_locations, many=True).data
+    return Response(data=response_data)
+
+
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
