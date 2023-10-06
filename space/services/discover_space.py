@@ -39,6 +39,5 @@ def handle_subscribe_or_neglect_location(request_data, user):
     user.add_to_notified_locations(location, request_data.get('subscribe'))
 
 
-
-
-
+def handle_get_list_of_subscribed_locations(user):
+    return user.get_subscribed_locations()
