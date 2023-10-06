@@ -220,10 +220,15 @@ def serve_get_events_per_location(request, location_id):
     status: scheduled, cancelled, completed, ongoing
     category_id: UUID string
     tags: comma separated strings (example: go-green,body-building)
+
+    limit: integer (number of results to be displayed in one fetch)
+    page: integer
     """
     request_data = request.GET
     matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
-    response_data = BaseEventSerializer(matching_events_of_location, many=True).data
+    limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
+    paginated_result = paginators.paginate_result(matching_events_of_location, limit, page_number)
+    response_data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
     return Response(data=response_data)
 
 
