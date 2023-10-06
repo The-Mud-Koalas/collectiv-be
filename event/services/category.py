@@ -27,3 +27,7 @@ def handle_create_event_category(request_data):
     _validate_create_event_category_request(request_data)
     event_category = _create_category_if_not_exist(request_data)
     return event_category
+
+
+def handle_get_all_event_categories():
+    return EventCategory.objects.all()

@@ -34,6 +34,18 @@ def serve_create_event_category(request):
     return Response(data=response_data)
 
 
+@require_GET
+@api_view(['GET'])
+def serve_get_event_categories(request):
+    """
+    This view serves as the endpoint to get the list of all
+    registered categories.
+    """
+    event_categories = category.handle_get_all_event_categories()
+    response_data = EventCategorySerializer(event_categories, many=True).data
+    return Response(data=response_data)
+
+
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
