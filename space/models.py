@@ -12,9 +12,7 @@ class Location(models.Model):
     longitude = models.FloatField()
 
     def get_active_events_of_space(self):
-        return (self.event_set.all()
-                    .filter(status__in=(EventStatus.SCHEDULED.value, EventStatus.ON_GOING.value))
-                    .order_by('start_date_time'))
+        return self.event_set.filter_active().order_by('start_date_time')
 
     def get_all_events_of_space(self):
         return self.event_set.all().order_by('start_date_time')

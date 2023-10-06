@@ -1,7 +1,7 @@
 from django.db import models
-
 from event.choices import EventStatus
 from event.exceptions import InvalidCheckInCheckOutException
+from event.managers import EventManager
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
 from review.models import ParticipationVolunteeringReview, ContributionReview
@@ -60,6 +60,8 @@ class Event(PolymorphicModel):
     tags = models.ManyToManyField('event.Tags')
 
     event_image_directory = models.TextField(null=True, default=None)
+
+    objects = EventManager()
 
     def get_type(self):
         return 'initiative'

@@ -190,8 +190,12 @@ def serve_search_events(request):
     request-param may contain:
     latitude: float
     longitude: float
-    name: string
+
+    type: initiative/project
+    status: string
+    category_id: UUID string
     tags: comma separated strings (example: go-green,body-building)
+    location_id: UUID string
 
     limit: integer (number of results to be displayed in one fetch)
     page: integer
@@ -216,7 +220,7 @@ def serve_get_events_per_location(request, location_id):
     location_id: UUID string
 
     request-param may contain:
-    type: event/project
+    type: initiative/project
     status: scheduled, cancelled, completed, ongoing
     category_id: UUID string
     tags: comma separated strings (example: go-green,body-building)
