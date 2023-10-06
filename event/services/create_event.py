@@ -9,7 +9,6 @@ from google.api_core import exceptions as google_exceptions
 from numbers import Number
 from space.services import utils as space_utils
 from . import utils
-from .utils import convert_tag_ids_to_tags
 from ..models import Event, Project
 
 
@@ -57,9 +56,6 @@ def _validate_create_event_request(request_data):
             app_utils.get_date_from_date_time_string(request_data.get('end_date_time'))):
         raise InvalidRequestException('Start time must not occur after the end time')
 
-    if not app_utils.is_valid_uuid_string(request_data.get('location_id')):
-        raise InvalidRequestException('Location ID must be a valid UUID string')
-
     if not isinstance(request_data.get('tags'), list):
         raise InvalidRequestException('Tags must be a list')
 
@@ -68,7 +64,7 @@ def _validate_create_event_request(request_data):
             raise InvalidRequestException('Tag ID must be a valid UUID string')
 
 
-def _create_event(request_data, event_space, event_tags, creator) -> Event:
+def _create_event(request_data, event_category, event_space, event_tags, creator) -> Event:
     event_is_project = request_data.get('is_project')
 
     if event_is_project:
@@ -80,6 +76,7 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
             end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
             location=event_space,
             creator=creator,
+            category=event_category,
             goal=request_data.get('project_goal'),
             measurement_unit=request_data.get('goal_measurement_unit')
         )
@@ -92,7 +89,8 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
             start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
             end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
             location=event_space,
-            creator=creator
+            creator=creator,
+            category=event_category,
         )
 
     for tag in event_tags:
@@ -105,9 +103,17 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
 def handle_create_event(request_data, user):
     _validate_create_event_request(request_data)
     request_data = app_utils.trim_all_request_attributes(request_data)
+    event_category = utils.get_category_from_id_or_raise_exception(request_data.get('category_id'))
     event_space = space_utils.get_space_by_id_or_raise_exception(request_data.get('location_id'))
-    event_tags = convert_tag_ids_to_tags(request_data.get('tags'))
-    created_event = _create_event(request_data, event_space=event_space, event_tags=event_tags, creator=user)
+    event_tags = utils.convert_tag_ids_to_tags(request_data.get('tags'))
+    created_event = _create_event(
+        request_data,
+        event_category=event_category,
+        event_space=event_space,
+        event_tags=event_tags,
+        creator=user
+    )
+
     return created_event
 
 
@@ -115,7 +121,7 @@ def _delete_event_image(event):
     try:
         google_storage.delete_file_from_google_bucket(event.get_event_image_directory(), GOOGLE_STORAGE_BUCKET_NAME)
 
-    except google_exceptions.NotFound as exc:
+    except google_exceptions.NotFound:
         pass
 
 

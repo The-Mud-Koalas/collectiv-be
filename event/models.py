@@ -52,8 +52,9 @@ class Event(PolymorphicModel):
     end_date_time = models.DateTimeField()
 
     location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
-
     creator = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey('event.EventCategory', on_delete=models.RESTRICT)
+
     status = models.CharField(max_length=10, choices=EventStatus.choices, default=EventStatus.SCHEDULED)
     tags = models.ManyToManyField('event.Tags')
 

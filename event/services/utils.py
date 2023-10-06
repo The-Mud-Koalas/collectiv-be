@@ -42,6 +42,15 @@ def get_category_from_name(category_name):
     return None
 
 
+def get_category_from_id_or_raise_exception(category_id):
+    matching_category = EventCategory.objects.filter(id=category_id)
+
+    if len(matching_category) > 0:
+        return matching_category[0]
+    else:
+        raise ObjectDoesNotExist(f'Event Category with ID {category_id} does not exist')
+
+
 def convert_tag_ids_to_tags(tag_ids):
     tags = []
     for tag_id in tag_ids:
