@@ -1,7 +1,7 @@
-from space.services.haversine import haversine
-from datetime import datetime, timezone
 from django.db import models
+from event.choices import EventStatus
 from rest_framework import serializers
+from space.services.haversine import haversine
 import uuid
 
 
@@ -13,8 +13,11 @@ class Location(models.Model):
 
     def get_active_events_of_space(self):
         return (self.event_set.all()
-                    .filter(end_date_time__gte=datetime.now(tz=timezone.utc))
+                    .filter(status__in=(EventStatus.SCHEDULED.value, EventStatus.ON_GOING.value))
                     .order_by('start_date_time'))
+
+    def get_all_events_of_space(self):
+        return self.event_set.all().order_by('start_date_time')
 
     def coordinate_is_inside_location(self, latitude, longitude, tolerance=0.1):
         distance_from_location = haversine(

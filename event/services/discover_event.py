@@ -1,4 +1,5 @@
-import space.services.haversine
+from . import utils
+from ..models import Event, Tags
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
@@ -8,8 +9,7 @@ from space.models import Location
 from space.services import utils as space_utils
 from typing import List
 from users.models import User
-from . import utils
-from ..models import Event, Tags
+import space.services.haversine
 import mimetypes
 
 
@@ -37,8 +37,8 @@ def handle_get_event_image_by_id(event_id):
 
 def _get_active_events_of_spaces(spaces):
     events_of_spaces = []
-    for space in spaces:
-        events_of_spaces.extend(space.get_active_events_of_space())
+    for space_ in spaces:
+        events_of_spaces.extend(space_.get_active_events_of_space())
 
     return events_of_spaces
 
@@ -105,6 +105,27 @@ def handle_search_events(request_data):
 
     return events
 
+
+def handle_get_events_per_location(location_id, request_data):
+    location = space_utils.get_space_by_id_or_raise_exception(location_id)
+    events_of_space = location.get_all_events_of_space()
+
+    if request_data.get('type') is not None and request_data.get('type').lower() == 'initiative':
+        events_of_space = utils.filter_initiatives(events_of_space)
+
+    if request_data.get('type') is not None and request_data.get('type').lower() == 'project':
+        events_of_space = utils.filter_initiatives(events_of_space)
+
+    if request_data.get('status') is not None:
+        events_of_space = events_of_space.filter(status__iexact=request_data.get('status'))
+
+    if request_data.get('category_id') is not None:
+        events_of_space = events_of_space.filter(category__id=request_data.get('category_id'))
+
+    if request_data.get('tag_id') is not None:
+        events_of_space = events_of_space.filter(tags__id=request_data.get('tag_id'))
+
+    return events_of_space
 
 
 

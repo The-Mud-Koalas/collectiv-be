@@ -204,6 +204,29 @@ def serve_search_events(request):
     return Response(data=data)
 
 
+@require_GET
+@api_view(['GET'])
+def serve_get_events_per_location(request, location_id):
+    """
+    This view serves as the endpoint to display the list of events located in a location.
+    The list of events is queryable based on the event type (event/project), status,
+    and the categories.
+    ----------------------------------------------------------
+    request-param must contain:
+    location_id: UUID string
+
+    request-param may contain:
+    type: event/project
+    status: scheduled, cancelled, completed, ongoing
+    category_id: UUID string
+    tag_id: UUID string
+    """
+    request_data = request.GET
+    matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
+    response_data = BaseEventSerializer(matching_events_of_location, many=True).data
+    return Response(data=response_data)
+
+
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()

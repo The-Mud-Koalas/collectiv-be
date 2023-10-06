@@ -1,4 +1,6 @@
 from django.db import models
+
+from event.choices import EventStatus
 from event.exceptions import InvalidCheckInCheckOutException
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
@@ -23,13 +25,6 @@ class TagsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tags
         fields = '__all__'
-
-
-class EventStatus(models.TextChoices):
-    SCHEDULED = 'Scheduled'
-    ON_GOING = 'On Going'
-    COMPLETED = 'Completed'
-    CANCELLED = 'Cancelled'
 
 
 class EventCategory(models.Model):
@@ -67,7 +62,7 @@ class Event(PolymorphicModel):
     event_image_directory = models.TextField(null=True, default=None)
 
     def get_type(self):
-        return 'event'
+        return 'initiative'
 
     def get_status(self):
         return self.status
@@ -236,12 +231,16 @@ class TransactionHistorySerializer(serializers.ModelSerializer):
 
 
 class EventSerializer(serializers.ModelSerializer):
+    event_type = serializers.SerializerMethodField(method_name='get_event_type')
     event_location = serializers.SerializerMethodField(method_name='get_event_location_data')
     event_category = serializers.SerializerMethodField(method_name='get_category_data')
     event_creator_id = serializers.SerializerMethodField(method_name='get_event_creator_user_id')
     event_start_date_time = serializers.SerializerMethodField(method_name='get_start_date_time_iso_format')
     event_end_date_time = serializers.SerializerMethodField(method_name='get_end_date_time_iso_format')
     event_tags = serializers.SerializerMethodField(method_name='get_tags_names')
+
+    def get_event_type(self, event):
+        return event.get_type()
 
     def get_event_location_data(self, event):
         return LocationSerializer(event.get_location()).data
@@ -269,6 +268,7 @@ class EventSerializer(serializers.ModelSerializer):
             'description',
             'min_num_of_volunteers',
             'status',
+            'event_type',
             'event_location',
             'event_category',
             'event_creator_id',

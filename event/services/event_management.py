@@ -1,7 +1,7 @@
 import numbers
 
 from . import utils
-from ..models import EventStatus
+from ..choices import EventStatus
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from django.core.exceptions import ObjectDoesNotExist
