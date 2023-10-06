@@ -4,6 +4,7 @@ from .views import (
     serve_create_event_category,
     serve_get_all_tags,
     serve_get_event_by_id,
+    serve_get_event_categories,
     serve_get_event_image_by_id,
     serve_get_nearby_events,
     serve_get_or_create_tags,
@@ -16,6 +17,7 @@ from .views import (
 
 urlpatterns = [
     path('category/create/', serve_create_event_category),
+    path('category/all/', serve_get_event_categories),
     path('create/', serve_create_event),
     path('detail/<str:event_id>/', serve_get_event_by_id),
     path('discover/nearby/', serve_get_nearby_events),
