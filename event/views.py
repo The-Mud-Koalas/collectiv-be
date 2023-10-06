@@ -65,6 +65,7 @@ def serve_create_event(request):
     start_date_time: ISO datetime string
     end_date_time: ISO datetime string
 
+    category_id: UUID string
     location_id: UUID string
     tags: list[string] (containing the tags ID for the event)
     """
