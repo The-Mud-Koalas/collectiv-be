@@ -42,3 +42,8 @@ def handle_get_or_create_location(request_data: dict) -> Location:
     else:
         return _create_location_from_request_data(request_data)
 
+
+def handle_get_all_locations():
+    return Location.objects.all()
+
+
