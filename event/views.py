@@ -239,6 +239,7 @@ def serve_search_events(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_update_event_status(request):
     """
     This view serves as the endpoint to update the event status.
@@ -256,6 +257,7 @@ def serve_update_event_status(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_update_project_progress(request):
     """
     This view serves as the endpoint for project creator to update

@@ -1,5 +1,5 @@
 from . import utils
-from ..models import Event
+from ..models import Event, EventType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
@@ -76,10 +76,10 @@ def _get_active_events_based_on_coordinate(latitude, longitude):
 
 
 def _filter_events_based_on_search_parameter(events, search_parameter):
-    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == 'initiative':
+    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.INITIATIVE:
         events = utils.filter_initiatives(events)
 
-    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == 'project':
+    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.PROJECT:
         events = utils.filter_initiatives(events)
 
     if search_parameter.get('status') is not None:
