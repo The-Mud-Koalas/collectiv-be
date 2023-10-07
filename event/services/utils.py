@@ -1,4 +1,4 @@
-from ..models import Event, EventCategory, Tags
+from ..models import Event, EventCategory, EventType, Tags
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -13,6 +13,15 @@ def get_tag_by_id_or_raise_exception(tag_id):
 
 def get_event_by_id_or_raise_exception(event_id):
     matching_event = Event.objects.filter(id=event_id)
+
+    if len(matching_event) > 0:
+        return matching_event[0]
+    else:
+        raise ObjectDoesNotExist(f'Event with id {event_id} does not exist')
+
+
+def get_event_by_id_or_raise_exception_thread_safe(event_id):
+    matching_event = Event.objects.filter(id=event_id).select_for_update()
 
     if len(matching_event) > 0:
         return matching_event[0]
@@ -61,8 +70,8 @@ def convert_tag_ids_to_tags(tag_ids):
 
 
 def filter_initiatives(list_of_events):
-    return [event for event in list_of_events if event.get_type() == 'initiative']
+    return [event for event in list_of_events if event.get_type() == EventType.INITIATIVE]
 
 
 def filter_projects(list_of_events):
-    return [event for event in list_of_events if event.get_type() == 'project']
+    return [event for event in list_of_events if event.get_type() == EventType.PROJECT]

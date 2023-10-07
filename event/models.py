@@ -44,13 +44,21 @@ class EventCategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class EventType:
+    INITIATIVE = 'initiative'
+    PROJECT = 'project'
+
+
 class Event(PolymorphicModel):
     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     name = models.CharField(max_length=50)
     description = models.TextField(null=True)
-    min_num_of_volunteers = models.IntegerField(default=0)
     start_date_time = models.DateTimeField()
     end_date_time = models.DateTimeField()
+
+    min_num_of_volunteers = models.PositiveIntegerField(default=0)
+    current_num_of_participants = models.PositiveIntegerField(default=0)
+    current_num_of_volunteers = models.PositiveIntegerField(default=0)
 
     location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
     creator = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
@@ -64,7 +72,7 @@ class Event(PolymorphicModel):
     objects = EventManager()
 
     def get_type(self):
-        return 'initiative'
+        return EventType.INITIATIVE
 
     def get_status(self):
         return self.status
@@ -128,6 +136,9 @@ class Event(PolymorphicModel):
             participant=participant,
         )
 
+        self.current_num_of_participants += 1
+        self.save()
+
         return event_participation
 
     def add_volunteer(self, volunteer):
@@ -136,7 +147,20 @@ class Event(PolymorphicModel):
             participant=volunteer,
         )
 
+        self.current_num_of_volunteers += 1
+        self.save()
+
         return event_participation
+
+    def decrement_participant(self):
+        if self.current_num_of_participants > 0:
+            self.current_num_of_participants -= 1
+            self.save()
+
+    def decrement_volunteer(self):
+        if self.current_num_of_volunteers > 0:
+            self.current_num_of_volunteers -= 1
+            self.save()
 
     def is_active(self):
         return self.status in (EventStatus.SCHEDULED, EventStatus.ON_GOING)
@@ -168,6 +192,32 @@ class Project(Event):
     progress = models.FloatField(default=0)
     measurement_unit = models.CharField(max_length=30)
 
+    def get_participation_by_participant(self, participant):
+        raise NotImplementedError()
+
+    def check_participation(self, participant):
+        raise NotImplementedError()
+
+    def add_participant(self, participant):
+        raise NotImplementedError()
+
+    def get_contribution_by_contributor(self, contributor):
+        matching_participation = self.projectcontribution_set.filter(contributor=contributor)
+
+        if len(matching_participation) > 0:
+            return matching_participation[0]
+
+        else:
+            return None
+
+    def add_contributor(self, contributor):
+        event_participation = ProjectContribution.objects.create(
+            event=self,
+            contributor=contributor,
+        )
+
+        return event_participation
+
     def get_transactions(self):
         return self.transactionhistory_set.all()
 
@@ -191,7 +241,7 @@ class Project(Event):
         self.save()
 
     def get_type(self):
-        return 'project'
+        return EventType.PROJECT
 
     def get_goal(self):
         return self.goal
@@ -202,22 +252,10 @@ class Project(Event):
     def get_measurement_unit(self):
         return self.measurement_unit
 
-    def add_contributor(self, contributor):
-        event_participation = ProjectContribution.objects.create(
-            event=self,
-            contributor=contributor,
-        )
 
-        return event_participation
-
-    def get_contributor_by_participant(self, participant):
-        matching_participation = self.projectcontribution_set.filter(contributor=participant)
-
-        if len(matching_participation) > 0:
-            return matching_participation[0]
-
-        else:
-            return None
+class TransactionType:
+    INCREASE = 'increase'
+    DECREASE = 'decrease'
 
 
 class TransactionHistory(models.Model):
@@ -269,6 +307,8 @@ class EventSerializer(serializers.ModelSerializer):
             'name',
             'description',
             'min_num_of_volunteers',
+            'current_num_of_participants',
+            'current_num_of_volunteers',
             'status',
             'event_type',
             'event_location',
@@ -296,6 +336,17 @@ class BaseEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class ParticipationType:
+    PARTICIPANT = 'participant'
+    VOLUNTEER = 'volunteer'
+
+
+class ParticipationStatus:
+    PAST = 'past'
+    ON_GOING = 'on going'
+    FUTURE = 'future'
+
+
 class EventParticipation(PolymorphicModel):
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
@@ -312,17 +363,17 @@ class EventParticipation(PolymorphicModel):
         ]
 
     def get_participation_type(self):
-        return 'participant'
+        return ParticipationType.PARTICIPANT
 
     def get_status(self):
         if self.check_out_time is not None:
-            return 'past'
+            return ParticipationStatus.PAST
 
         if self.check_in_time is not None and self.check_out_time is None:
-            return 'ongoing'
+            return ParticipationStatus.ON_GOING
 
         if self.check_in_time is None:
-            return 'future'
+            return ParticipationStatus.FUTURE
 
     def check_in(self):
         if self.check_in_time is not None:
@@ -371,12 +422,21 @@ class EventParticipation(PolymorphicModel):
         else:
             return None
 
+    def delete_participation(self):
+        if self.get_participation_type() == ParticipationType.PARTICIPANT:
+            self.event.decrement_participant()
+
+        if self.get_participation_type() == ParticipationType.VOLUNTEER:
+            self.event.decrement_volunteer()
+
+        self.delete()
+
 
 class EventVolunteerParticipation(EventParticipation):
     granted_manager_access = models.BooleanField(default=False)
 
     def get_participation_type(self):
-        return 'volunteer'
+        return ParticipationType.VOLUNTEER
 
     def get_granted_manager_access(self):
         return self.granted_manager_access
