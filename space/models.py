@@ -1,5 +1,4 @@
 from django.db import models
-from event.choices import EventStatus
 from rest_framework import serializers
 from space.services.haversine import haversine
 import uuid

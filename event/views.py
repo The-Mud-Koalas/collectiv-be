@@ -6,12 +6,18 @@ from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import BaseEventSerializer, EventCategorySerializer, TagsSerializer
+from .models import (
+    BaseEventSerializer,
+    EventCategorySerializer,
+    GoalKindSerializer,
+    TagsSerializer
+)
 from .services import (
     category,
     create_event,
     discover_event,
     event_management,
+    goals,
     tags,
 )
 import json
@@ -40,9 +46,23 @@ def serve_get_event_categories(request):
     """
     This view serves as the endpoint to get the list of all
     registered categories.
+    ----------------------------------------------------------
     """
     event_categories = category.handle_get_all_event_categories()
     response_data = EventCategorySerializer(event_categories, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_all_goal_kinds(request):
+    """
+    This view serves as the endpoint to get the list of all registered
+    goal kinds.
+    ----------------------------------------------------------
+    """
+    goal_kinds = goals.handle_get_all_goal_kinds()
+    response_data = GoalKindSerializer(goal_kinds, many=True).data
     return Response(data=response_data)
 
 
@@ -57,9 +77,6 @@ def serve_create_event(request):
     request-data must contain:
     name: string
     description: string (optional)
-    is_project: boolean
-    project_goal: float (optional, required if is_project is true)
-    goal_measurement_unit: float (optional, required if is_project is true)
     min_num_of_volunteers: integer
 
     start_date_time: ISO datetime string
@@ -68,6 +85,11 @@ def serve_create_event(request):
     category_id: UUID string
     location_id: UUID string
     tags: list[string] (containing the tags ID for the event)
+
+    is_project: boolean
+    project_goal: float (optional, required if is_project is true)
+    goal_measurement_unit: float (optional, required if is_project is true)
+    goal_kind: string (optional, required if is_project is true)
     """
     request_data = json.loads(request.body.decode('utf-8'))
     created_event = create_event.handle_create_event(request_data, user=request.user)
