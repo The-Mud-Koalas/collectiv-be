@@ -29,7 +29,7 @@ def serve_register_user_participation_to_event(request):
     event_id: UUID string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    participation.handle_register_user_participation_to_event(request_data, request.user)
+    participation.handle_register_user_participation_to_initiative(request_data, request.user)
     response_data = {'message': 'Participant is successfully added'}
     return Response(data=response_data)
 
@@ -85,8 +85,11 @@ def serve_participation_self_check_in_confirmation(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    participation_attendance.handle_participation_self_check_in_confirmation(request_data, request.user)
-    response_data = {'message': 'Participant successfully checked in'}
+    check_in_data = participation_attendance.handle_participation_self_check_in_confirmation(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked in',
+        'data': check_in_data
+    }
     return Response(data=response_data)
 
 
@@ -104,8 +107,11 @@ def serve_participation_self_check_out_confirmation(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    participation_attendance.handle_participation_self_check_out_confirmation(request_data, request.user)
-    response_data = {'message': 'Participant successfully checked out'}
+    check_out_data = participation_attendance.handle_participation_self_check_out_confirmation(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked out',
+        'data': check_out_data
+    }
     return Response(data=response_data)
 
 

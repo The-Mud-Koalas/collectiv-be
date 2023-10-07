@@ -1,3 +1,4 @@
+# TODO: FIX CONTRIBUTION
 from .participation_attendance import validate_event_is_on_going
 from .volunteer_attendance import validate_assisting_user_is_manager_of_event
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
@@ -5,7 +6,7 @@ from communalspace.exceptions import InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils
 from django.core.exceptions import ObjectDoesNotExist
 from event.services import utils as event_utils
-from event.models import EventType
+from event.choices import EventType
 from users.services import utils as user_utils
 
 
@@ -37,8 +38,6 @@ def handle_volunteer_mark_participant_contribution(request_data, volunteer_user)
         request_data.get('contributor_email_phone')
     )
     contributor = user_utils.get_user_by_id_or_raise_exception(contributor_user_id)
-
-    validate_contributor_has_not_contributed(project, contributor)
     project.add_contributor(contributor)
 
 

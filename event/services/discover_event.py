@@ -1,5 +1,6 @@
 from . import utils
-from ..models import Event, EventType
+from ..models import Event
+from ..choices import EventType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage

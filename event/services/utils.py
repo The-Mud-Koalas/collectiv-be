@@ -1,10 +1,10 @@
 from ..models import (
     Event,
     EventCategory,
-    EventType,
     GoalKind,
     Tags
 )
+from ..choices import EventType
 from django.core.exceptions import ObjectDoesNotExist
 
 

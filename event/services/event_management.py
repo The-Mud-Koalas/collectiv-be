@@ -1,6 +1,5 @@
 from . import utils
-from ..choices import EventStatus
-from ..models import TransactionType
+from ..choices import EventStatus, TransactionType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from django.core.exceptions import ObjectDoesNotExist

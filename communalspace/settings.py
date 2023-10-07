@@ -156,3 +156,7 @@ GOOGLE_STORAGE_BUCKET_NAME = 'artifacts.mud-koalas-communal-space.appspot.com'
 
 # Pagination Settings
 DEFAULT_PAGE_LIMIT = 10
+
+# Reward Settings
+MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY = 0
+POINTS_PER_ATTENDANCE = 1
