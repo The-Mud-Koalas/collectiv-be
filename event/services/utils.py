@@ -1,4 +1,10 @@
-from ..models import Event, EventCategory, EventType, Tags
+from ..models import (
+    Event,
+    EventCategory,
+    EventType,
+    GoalKind,
+    Tags
+)
 from django.core.exceptions import ObjectDoesNotExist
 
 
@@ -75,3 +81,8 @@ def filter_initiatives(list_of_events):
 
 def filter_projects(list_of_events):
     return [event for event in list_of_events if event.get_type() == EventType.PROJECT]
+
+
+def get_or_create_goal_kind(goal_kind):
+    goal_kind, _ = GoalKind.objects.get_or_create(kind=goal_kind)
+    return goal_kind

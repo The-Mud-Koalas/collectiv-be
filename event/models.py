@@ -187,10 +187,21 @@ class Event(PolymorphicModel):
         self.save()
 
 
+class GoalKind(models.Model):
+    kind = models.CharField(primary_key=True)
+
+
+class GoalKindSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GoalKind
+        fields = '__all__'
+
+
 class Project(Event):
     goal = models.FloatField()
     progress = models.FloatField(default=0)
     measurement_unit = models.CharField(max_length=30)
+    goal_kind = models.ForeignKey('event.GoalKind', on_delete=models.RESTRICT, null=True, default=None)
 
     def get_participation_by_participant(self, participant):
         raise NotImplementedError()
