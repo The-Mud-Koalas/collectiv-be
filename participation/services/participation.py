@@ -24,7 +24,7 @@ def _validate_participation_registration(event, user):
         )
 
 
-def _validate_prevent_participation_registration_to_project(event):
+def _validate_ensure_event_is_initiative(event):
     if event.get_type() == EventType.PROJECT:
         raise InvalidRequestException('Registration to project is not available')
 
@@ -32,8 +32,8 @@ def _validate_prevent_participation_registration_to_project(event):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_register_user_participation_to_event(request_data, user):
     event = event_utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
+    _validate_ensure_event_is_initiative(event)
     _validate_participation_registration(event, user)
-    _validate_prevent_participation_registration_to_project(event)
     event.add_participant(user)
 
 

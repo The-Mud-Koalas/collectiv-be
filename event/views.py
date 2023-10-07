@@ -10,9 +10,11 @@ from .models import (
     BaseEventSerializer,
     EventCategorySerializer,
     GoalKindSerializer,
+    InitiativeAnalyticsSerializer,
     TagsSerializer
 )
 from .services import (
+    analytics,
     category,
     create_event,
     discover_event,
@@ -296,5 +298,18 @@ def serve_update_project_progress(request):
     return Response(data=response_data)
 
 
+@require_GET
+@api_view(['GET'])
+def serve_get_event_analytics(request):
+    """
+    This view serves as the endpoint to get the analytics of an event.
+    ----------------------------------------------------------
+    request-param must contain:
+    event_id: UUID string
+    """
+    request_data = request.GET
+    event = analytics.handle_get_event_analytics(request_data)
+    response_data = InitiativeAnalyticsSerializer(event).data
+    return Response(data=response_data)
 
 
