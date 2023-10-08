@@ -254,8 +254,8 @@ class Project(Event):
         contribution_participation.register_contribution(amount_contributed)
         return contribution_participation
 
-    def get_transactions_per_day(self):
-        pass
+    def get_activities(self):
+        return ContributionActivity.objects.filter(participation__event=self).order_by('-timestamp')
 
 
 class EventParticipation(PolymorphicModel):
@@ -450,6 +450,9 @@ class ContributionParticipation(EventParticipation):
         self.total_contribution += contributed_amount
         self.save()
 
+    def get_contributions(self):
+        return self.contributionactivity_set.all().order_by('-timestamp')
+
 
 class ContributionActivity(models.Model):
     participation = models.ForeignKey('event.ContributionParticipation', on_delete=models.CASCADE)
@@ -457,8 +460,31 @@ class ContributionActivity(models.Model):
     contribution = models.PositiveIntegerField(default=0)
 
 
+class ContributionActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContributionActivity
+        fields = [
+            'timestamp',
+            'contribution',
+        ]
+
+
+class ContributionParticipationSerializer(serializers.ModelSerializer):
+    activities = serializers.SerializerMethodField(method_name='get_activity_data')
+
+    def get_activity_data(self, instance):
+        return ContributionActivitySerializer(instance.get_contributions, many=True).data
+
+    class Meta:
+        model = ContributionParticipation
+        fields = [
+            'total_contribution',
+            'activities',
+        ]
+
+
 class AttendableEventParticipationSerializer(serializers.ModelSerializer):
-    activity = serializers.SerializerMethodField(method_name='get_activity_data')
+    activities = serializers.SerializerMethodField(method_name='get_activity_data')
 
     def get_activity_data(self, instance):
         return AttendanceActivitySerializer(instance.get_activities(), many=True).data
@@ -469,7 +495,7 @@ class AttendableEventParticipationSerializer(serializers.ModelSerializer):
             'is_currently_attending',
             'overall_duration_in_seconds',
             'has_attended',
-            'activity',
+            'activities',
         ]
 
 
@@ -580,7 +606,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         serialized_data['goal'] = project.get_goal()
         serialized_data['measurement_unit'] = project.get_measurement_unit()
         serialized_data['progress'] = project.get_progress()
-        # serialized_data['transactions'] = TransactionHistorySerializer(project.get_transactions_per_day(), many=True).data
+        serialized_data['transactions'] = ContributionActivitySerializer(project.get_activities(), many=True).data
         return serialized_data
 
     class Meta:
