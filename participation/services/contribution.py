@@ -1,5 +1,5 @@
 # TODO: FIX CONTRIBUTION
-from .participation_attendance import validate_event_is_on_going
+from .attendance_helper import validate_event_is_on_going
 from .volunteer_attendance import validate_assisting_user_is_manager_of_event
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException

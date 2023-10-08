@@ -1,6 +1,6 @@
 # DELEGATION FUNCTION TO MARK CHECK IN OF VOLUNTEER AND PARTICIPANT
 # CHECK IN VOLUNTEER using delegation mechanism
-from .participation_attendance import validate_event_is_on_going
+from .attendance_helper import validate_event_is_on_going
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import RestrictedAccessException, InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils

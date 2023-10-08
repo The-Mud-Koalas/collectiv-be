@@ -157,6 +157,10 @@ GOOGLE_STORAGE_BUCKET_NAME = 'artifacts.mud-koalas-communal-space.appspot.com'
 # Pagination Settings
 DEFAULT_PAGE_LIMIT = 10
 
+# Geofencing setting (in KM)
+AREA_RADIUS = 0.1
+AREA_BUFFER_RADIUS = 0.3
+
 # Reward Settings
 MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY = 0
 POINTS_PER_ATTENDANCE = 1

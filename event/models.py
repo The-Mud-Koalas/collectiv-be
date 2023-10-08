@@ -148,6 +148,9 @@ class Event(PolymorphicModel):
     def check_user_is_inside_event(self, user_latitude, user_longitude):
         return self.location.coordinate_is_inside_location(user_latitude, user_longitude)
 
+    def check_user_is_near_event(self, user_latitude, user_longitude):
+        return self.location.coordinate_is_near_location(user_latitude, user_longitude)
+
     def check_user_is_granted_manager_access(self, user):
         """
         1. User is the creator of event, or
@@ -317,6 +320,10 @@ class AttendableEventParticipation(EventParticipation):
     is_currently_attending = models.BooleanField(default=False)
     overall_duration_in_seconds = models.FloatField(default=0)
     has_attended = models.BooleanField(default=False)
+    has_violated_geofencing_rule = models.BooleanField(default=False)
+
+    def get_event(self):
+        raise NotImplementedError
 
     def can_submit_review(self):
         return self.has_attended
@@ -325,8 +332,16 @@ class AttendableEventParticipation(EventParticipation):
         self.has_attended = attended
         self.save()
 
+    def set_violated_geofencing_rule(self):
+        self.has_violated_geofencing_rule = True
+        self.save()
+
+    def get_has_violated_geofencing_rule(self):
+        return self.has_violated_geofencing_rule
+
     def is_eligible_for_reward(self):
-        return self.overall_duration_in_seconds >= MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY
+        return (self.overall_duration_in_seconds >= MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY and
+                not self.has_violated_geofencing_rule)
 
     def get_is_currently_attending(self):
         return self.is_currently_attending
@@ -341,6 +356,11 @@ class AttendableEventParticipation(EventParticipation):
             'check_in_time': check_in_activity.get_timestamp_iso_format()
         }
 
+    def _user_is_compliance_to_geofencing_rule_while_checking_out(self, latitude, longitude):
+        return latitude is not None \
+               and longitude is not None and \
+               self.get_event().check_user_is_near_event(latitude, longitude)
+
     def check_out(self):
         check_out_activity = self.add_activity(AttendanceActivityType.CHECK_OUT.value)
         check_in_activity = (self.get_activities()
@@ -351,13 +371,16 @@ class AttendableEventParticipation(EventParticipation):
         attendance_duration = (check_out_activity.get_timestamp() - check_in_activity.get_timestamp()).total_seconds()
         self.overall_duration_in_seconds += attendance_duration
         self.is_currently_attending = False
-        self.save()
 
+        self.save()
         return {
             'check_in_time': check_in_activity.get_timestamp_iso_format(),
             'check_out_time': check_out_activity.get_timestamp_iso_format(),
             'duration_in_seconds': attendance_duration,
         }
+
+    def self_check_out(self):
+        raise NotImplementedError
 
     def get_participation_type(self):
         raise NotImplementedError
@@ -369,6 +392,9 @@ class AttendableEventParticipation(EventParticipation):
 class InitiativeParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Initiative', on_delete=models.CASCADE)
 
+    def get_event(self):
+        return self.event
+
     def get_participation_type(self):
         return ParticipationType.PARTICIPANT
 
@@ -376,10 +402,24 @@ class InitiativeParticipation(AttendableEventParticipation):
         self.event.decrement_participant()
         self.delete()
 
+    def self_check_out(self, latitude=None, longitude=None):
+        check_out_data = self.check_out()
+        if not self._user_is_compliance_to_geofencing_rule_while_checking_out(latitude, longitude) or \
+                self.get_event().get_status() != EventStatus.ON_GOING.value:
+            self.set_violated_geofencing_rule()
+
+        return {
+            **check_out_data,
+            'violated_geofencing_rule': self.get_has_violated_geofencing_rule(),
+        }
+
 
 class VolunteerParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
     granted_manager_access = models.BooleanField(default=False)
+
+    def get_event(self):
+        return self.event
 
     def get_participation_type(self):
         return ParticipationType.VOLUNTEER

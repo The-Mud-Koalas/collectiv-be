@@ -129,8 +129,13 @@ def serve_participation_automated_check_out(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    check_out_status = participation_attendance.handle_participation_automatic_check_out(request_data, request.user)
-    response_data = {'checked_out': check_out_status}
+    check_out_data = participation_attendance.handle_participation_automatic_check_out(request_data, request.user)
+
+    if check_out_data:
+        response_data = {'checked_out': True, 'data': check_out_data}
+    else:
+        response_data = {'checked_out': False}
+
     return Response(data=response_data)
 
 
