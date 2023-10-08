@@ -201,8 +201,8 @@ def serve_volunteer_assisted_check_in(request):
     volunteer_email_phone: string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    volunteer_attendance.handle_volunteer_assisted_check_in(request_data, request.user)
-    response_data = {'message': 'Volunteer successfully checked in'}
+    check_in_data = volunteer_attendance.handle_volunteer_assisted_check_in(request_data, request.user)
+    response_data = {'message': 'Volunteer successfully checked in', 'data': check_in_data}
     return Response(data=response_data)
 
 
@@ -223,8 +223,8 @@ def serve_volunteer_self_check_out(request):
     event_id: UUID string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    volunteer_attendance.handle_volunteer_self_check_out(request_data, request.user)
-    response_data = {'message': 'Volunteer successfully checked out'}
+    check_out_data = volunteer_attendance.handle_volunteer_self_check_out(request_data, request.user)
+    response_data = {'message': 'Volunteer successfully checked out', 'data': check_out_data}
     return Response(data=response_data)
 
 

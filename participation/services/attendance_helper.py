@@ -18,10 +18,10 @@ def validate_user_can_check_in(user, participation):
         raise InvalidCheckInCheckOutException('User is currently attending an event')
 
 
-def check_in_user(user, attendable_event, participation):
-    check_in_data = participation.check_in()
+def check_in_user(user, attendable_event, attendable_participation):
+    check_in_data = attendable_participation.check_in()
     user.set_currently_attended_event(attendable_event)
-    user.set_currently_attending_role(participation.get_participation_type())
+    user.set_currently_attending_role(attendable_participation.get_participation_type())
     return check_in_data
 
 
@@ -41,12 +41,6 @@ def handle_check_out_reward_grant(user, check_out_data, attendable_participation
         reward_and_check_out_data['is_rewarded'] = False
 
     return reward_and_check_out_data
-
-
-def self_check_out_user(user, attendable_participation, user_latitude, user_longitude):
-    check_out_data = attendable_participation.self_check_out(user_latitude, user_longitude)
-    user.remove_currently_attended_event()
-    return handle_check_out_reward_grant(user, check_out_data, attendable_participation)
 
 
 def validate_user_is_a_volunteer(participation):

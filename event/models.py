@@ -325,6 +325,12 @@ class AttendableEventParticipation(EventParticipation):
     def get_event(self):
         raise NotImplementedError
 
+    def get_participation_type(self):
+        raise NotImplementedError
+
+    def delete_participation(self):
+        raise NotImplementedError
+
     def can_submit_review(self):
         return self.has_attended
 
@@ -356,11 +362,6 @@ class AttendableEventParticipation(EventParticipation):
             'check_in_time': check_in_activity.get_timestamp_iso_format()
         }
 
-    def _user_is_compliance_to_geofencing_rule_while_checking_out(self, latitude, longitude):
-        return latitude is not None \
-               and longitude is not None and \
-               self.get_event().check_user_is_near_event(latitude, longitude)
-
     def check_out(self):
         check_out_activity = self.add_activity(AttendanceActivityType.CHECK_OUT.value)
         check_in_activity = (self.get_activities()
@@ -379,15 +380,6 @@ class AttendableEventParticipation(EventParticipation):
             'duration_in_seconds': attendance_duration,
         }
 
-    def self_check_out(self):
-        raise NotImplementedError
-
-    def get_participation_type(self):
-        raise NotImplementedError
-
-    def delete_participation(self):
-        raise NotImplementedError
-
 
 class InitiativeParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Initiative', on_delete=models.CASCADE)
@@ -401,6 +393,11 @@ class InitiativeParticipation(AttendableEventParticipation):
     def delete_participation(self):
         self.event.decrement_participant()
         self.delete()
+
+    def _user_is_compliance_to_geofencing_rule_while_checking_out(self, latitude, longitude):
+        return latitude is not None \
+               and longitude is not None and \
+               self.get_event().check_user_is_near_event(latitude, longitude)
 
     def self_check_out(self, latitude=None, longitude=None):
         check_out_data = self.check_out()

@@ -11,10 +11,9 @@ from participation.services.attendance_helper import (
     validate_user_can_check_in,
     check_in_user,
     validate_user_can_check_out,
-    self_check_out_user,
-    validate_user_is_a_volunteer,
     check_out_user,
-    validate_assisting_user_is_manager_of_event
+    validate_assisting_user_is_manager_of_event,
+    handle_check_out_reward_grant
 )
 from space.services import utils as space_utils
 from users.services import utils as user_utils
@@ -42,6 +41,12 @@ def handle_participation_self_check_in_confirmation(request_data, user):
     return check_in_user(user, initiative, user_participation)
 
 
+def self_check_out_participant(user, attendable_participation, user_latitude, user_longitude):
+    check_out_data = attendable_participation.self_check_out(user_latitude, user_longitude)
+    user.remove_currently_attended_event()
+    return handle_check_out_reward_grant(user, check_out_data, attendable_participation)
+
+
 @catch_exception_and_convert_to_invalid_request_decorator((
         ObjectDoesNotExist,
         InvalidCheckInCheckOutException,
@@ -52,12 +57,17 @@ def handle_participation_self_check_out_confirmation(request_data, user):
     user_participation = initiative.get_participation_by_participant(user)
     _validate_user_is_a_participant(user_participation)
     validate_user_can_check_out(user_participation)
-    return self_check_out_user(user, user_participation, user_latitude=latitude, user_longitude=longitude)
+    return self_check_out_participant(user, user_participation, user_latitude=latitude, user_longitude=longitude)
 
 
 def _check_out_user_when_outside_event_location(user, initiative, participation, user_latitude, user_longitude):
     if not initiative.check_user_is_inside_event(user_latitude, user_longitude):
-        return self_check_out_user(user, participation, user_latitude=user_latitude, user_longitude=user_longitude)
+        return self_check_out_participant(
+            user,
+            participation,
+            user_latitude=user_latitude,
+            user_longitude=user_longitude
+        )
     else:
         return False
 
@@ -118,9 +128,4 @@ def handle_participation_aided_check_out(request_data, aiding_volunteer):
     user_participation = initiative.get_participation_by_participant(checking_out_user)
     validate_user_can_check_out(user_participation)
     return check_out_user(checking_out_user, user_participation)
-
-
-
-
-
 
