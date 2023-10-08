@@ -10,7 +10,7 @@ from participation.services.attendance_helper import (
     validate_user_is_inside_event_location,
     validate_user_can_check_in,
     check_in_user,
-    validate_user_can_check_out,
+    validate_user_is_attending_event,
     check_out_user,
     validate_assisting_user_is_manager_of_event,
     handle_check_out_reward_grant
@@ -56,7 +56,7 @@ def handle_participation_self_check_out_confirmation(request_data, user):
     initiative = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
     user_participation = initiative.get_participation_by_participant(user)
     _validate_user_is_a_participant(user_participation)
-    validate_user_can_check_out(user_participation)
+    validate_user_is_attending_event(user_participation)
     return self_check_out_participant(user, user_participation, user_latitude=latitude, user_longitude=longitude)
 
 
@@ -81,7 +81,7 @@ def handle_participation_automatic_check_out(request_data, user):
     initiative = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
     user_participation = initiative.get_participation_by_participant(user)
     _validate_user_is_a_participant(user_participation)
-    validate_user_can_check_out(user_participation)
+    validate_user_is_attending_event(user_participation)
     return _check_out_user_when_outside_event_location(user, initiative, user_participation, latitude, longitude)
 
 
@@ -126,6 +126,6 @@ def handle_participation_aided_check_out(request_data, aiding_volunteer):
 
     checking_out_user = user_utils.get_user_by_id_or_raise_exception(checking_out_user_id)
     user_participation = initiative.get_participation_by_participant(checking_out_user)
-    validate_user_can_check_out(user_participation)
+    validate_user_is_attending_event(user_participation)
     return check_out_user(checking_out_user, user_participation)
 

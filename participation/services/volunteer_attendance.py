@@ -4,8 +4,10 @@ from .attendance_helper import (
     validate_user_is_a_volunteer,
     validate_user_can_check_in,
     validate_assisting_user_is_manager_of_event,
+    validate_user_is_attending_event,
     check_in_user,
     check_out_user,
+    validate_assisting_and_checking_in_users_are_different,
 )
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.firebase_admin import firebase as firebase_utils
@@ -40,28 +42,27 @@ def handle_volunteer_assisted_check_in(request_data, assisting_user):
 def handle_volunteer_self_check_out(request_data, user):
     event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
     volunteer_participation = event.get_volunteer_participation_by_participant(user)
+
     validate_user_is_a_volunteer(volunteer_participation)
+    validate_user_is_attending_event(volunteer_participation)
+
     return check_out_user(user, volunteer_participation)
 
 
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_volunteer_grant_managerial_role(request_data, manager_user):
-    """
-    1. Validate event exists
-    2. Validate user is a manager of event
-    3. Get volunteer from user id
-    4. Validate volunteer already checks in
-    5. Grant access to user as manager
-    """
     event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
     validate_event_is_on_going(event)
     validate_assisting_user_is_manager_of_event(event, manager_user)
 
     volunteer_user_id = firebase_utils.get_user_id_from_email_or_phone_number(request_data.get('volunteer_email_phone'))
     granted_user = user_utils.get_user_by_id_or_raise_exception(volunteer_user_id)
-    participation = event.get_participation_by_participant(granted_user)
-    validate_user_is_a_volunteer(participation)
+    volunteer_participation = event.get_volunteer_participation_by_participant(granted_user)
 
-    participation.set_as_manager()
+    validate_user_is_a_volunteer(volunteer_participation)
+    validate_user_is_attending_event(volunteer_participation)
+
+    volunteer_participation.set_as_manager()
 
 
 

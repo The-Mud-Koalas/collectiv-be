@@ -151,16 +151,16 @@ class Event(PolymorphicModel):
     def check_user_is_near_event(self, user_latitude, user_longitude):
         return self.location.coordinate_is_near_location(user_latitude, user_longitude)
 
-    def check_user_is_granted_manager_access(self, user):
+    def check_user_can_act_as_manager(self, user):
         """
         1. User is the creator of event, or
-        2. User is a volunteer and has been granted access by other granter
+        2. User is a volunteer and has been granted access by other granter (and is currently attending)
         """
         if user == self.get_creator():
             return True
 
-        participation = self.get_participation_by_participant(user)
-        return isinstance(participation, VolunteerParticipation) and participation.get_granted_manager_access()
+        participation = self.get_volunteer_participation_by_participant(user)
+        return isinstance(participation, VolunteerParticipation) and participation.can_act_as_manager()
 
     def set_status(self, status):
         self.status = status
@@ -378,6 +378,7 @@ class AttendableEventParticipation(EventParticipation):
             'check_in_time': check_in_activity.get_timestamp_iso_format(),
             'check_out_time': check_out_activity.get_timestamp_iso_format(),
             'duration_in_seconds': attendance_duration,
+            'total_duration_in_seconds': self.overall_duration_in_seconds,
         }
 
 
@@ -421,12 +422,16 @@ class VolunteerParticipation(AttendableEventParticipation):
     def get_participation_type(self):
         return ParticipationType.VOLUNTEER
 
-    def get_granted_manager_access(self):
-        return self.granted_manager_access
+    def can_act_as_manager(self):
+        return self.granted_manager_access and self.get_is_currently_attending()
 
     def delete_participation(self):
         self.event.decrement_volunteer()
         self.delete()
+
+    def set_as_manager(self):
+        self.granted_manager_access = True
+        self.save()
 
 
 class ContributionParticipation(EventParticipation):
