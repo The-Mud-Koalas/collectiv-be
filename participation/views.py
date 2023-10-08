@@ -10,7 +10,7 @@ from participation.services import (
     volunteer_attendance,
     viewing_participation,
 )
-from event.models import BaseEventParticipationSerializer, ProjectContributionSerializer
+from event.models import BaseEventParticipationSerializer
 
 import json
 

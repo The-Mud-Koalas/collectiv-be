@@ -1,8 +1,6 @@
-# TODO: FIX CONTRIBUTION
 from .attendance_helper import validate_event_is_on_going, validate_assisting_user_is_manager_of_event, handle_reward_grant
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
-from communalspace.settings import POINTS_PER_ATTENDANCE
 from communalspace.firebase_admin import firebase as firebase_utils
 from django.core.exceptions import ObjectDoesNotExist
 from event.services import utils as event_utils

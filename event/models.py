@@ -9,7 +9,7 @@ from event.choices import (
 from event.managers import EventManager
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
-from review.models import ParticipationVolunteeringReview, ContributionReview
+from review.models import ParticipationReview
 from space.models import LocationSerializer
 
 import uuid
@@ -263,6 +263,7 @@ class EventParticipation(PolymorphicModel):
     registration_time = models.DateTimeField(auto_now=True)
     has_left_forum = models.BooleanField(default=False)
     rewarded = models.BooleanField(default=False)
+    submitted_review = models.BooleanField(default=False)
 
     def get_participation_type(self):
         raise NotImplementedError
@@ -274,10 +275,13 @@ class EventParticipation(PolymorphicModel):
         raise NotImplementedError
 
     def can_submit_review(self):
-        raise NotImplementedError
+        return not self.has_submitted_review()
 
     def has_been_rewarded(self):
         return self.rewarded
+
+    def has_submitted_review(self):
+        return self.submitted_review
 
     def set_rewarded(self, rewarded):
         self.rewarded = rewarded
@@ -297,6 +301,8 @@ class EventParticipation(PolymorphicModel):
         self.save()
 
     def create_review(self, rating, comment):
+        self.submitted_review = True
+        self.save()
         return ParticipationReview.objects.create(
             participation=self,
             event_rating=rating,
@@ -323,7 +329,7 @@ class AttendableEventParticipation(EventParticipation):
         raise NotImplementedError
 
     def can_submit_review(self):
-        return self.has_attended
+        return self.has_attended and not self.has_submitted_review()
 
     def set_attended(self, attended):
         self.has_attended = attended
@@ -430,9 +436,6 @@ class ContributionParticipation(EventParticipation):
     event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
     total_contribution = models.PositiveIntegerField(default=0)
 
-    def can_submit_review(self):
-        return True
-
     def is_eligible_for_reward(self):
         return not self.has_been_rewarded()
 
@@ -483,6 +486,12 @@ class ContributionParticipationSerializer(serializers.ModelSerializer):
         ]
 
 
+class EventParticipationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventParticipation
+        fields = '__all__'
+
+
 class AttendableEventParticipationSerializer(serializers.ModelSerializer):
     activities = serializers.SerializerMethodField(method_name='get_activity_data')
 
@@ -501,8 +510,19 @@ class AttendableEventParticipationSerializer(serializers.ModelSerializer):
 
 class BaseEventParticipationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
+        base_event_data = EventParticipationSerializer(instance).data
+
         if isinstance(instance, AttendableEventParticipation):
-            return AttendableEventParticipationSerializer(instance).data
+            return {
+                **base_event_data,
+                **AttendableEventParticipationSerializer(instance).data
+            }
+
+        else:
+            return {
+                **base_event_data,
+                **ContributionParticipationSerializer(instance).data
+            }
 
     class Meta:
         model = EventParticipation
@@ -629,181 +649,5 @@ class BaseEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# class EventParticipation(PolymorphicModel):
-#     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
-#     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
-#     registration_time = models.DateTimeField(auto_now=True)
-#
-#     check_in_time = models.DateTimeField(null=True)
-#     check_out_time = models.DateTimeField(null=True)
-#
-#     has_left_forum = models.BooleanField(default=False)
-#
-#     class Meta:
-#         indexes = [
-#             models.Index(fields=['event', 'participant'])
-#         ]
-#
-#     def get_participation_type(self):
-#         return ParticipationType.PARTICIPANT
-#
-#     def get_status(self):
-#         if self.check_out_time is not None:
-#             return ParticipationStatus.PAST
-#
-#         if self.check_in_time is not None and self.check_out_time is None:
-#             return ParticipationStatus.ON_GOING
-#
-#         if self.check_in_time is None:
-#             return ParticipationStatus.FUTURE
-#
-#     def check_in(self):
-#         if self.check_in_time is not None:
-#             raise InvalidCheckInCheckOutException(f'User already checked in at {self.check_in_time}')
-#
-#         self.check_in_time = datetime.datetime.utcnow()
-#         self.save()
-#
-#     def check_out(self):
-#         if self.check_in_time is None:
-#             raise InvalidCheckInCheckOutException('Check in time does not exist')
-#
-#         if self.check_out_time is not None:
-#             raise InvalidCheckInCheckOutException(f'User already checked out at {self.check_out_time}')
-#
-#         self.check_out_time = datetime.datetime.utcnow()
-#         self.save()
-#
-#     def has_checked_in(self):
-#         return self.check_in_time is not None
-#
-#     def has_checked_out(self):
-#         return self.check_out_time is not None
-#
-#     def create_review(self, rating, comment):
-#         review = ParticipationVolunteeringReview.objects.create(
-#             participation=self,
-#             event_rating=rating,
-#             event_comment=comment,
-#         )
-#
-#         return review
-#
-#     def get_has_left_forum(self):
-#         return self.has_left_forum
-#
-#     def set_has_left_forum(self, has_left_forum):
-#         self.has_left_forum = has_left_forum
-#         self.save()
-#
-#     def get_review(self):
-#         review = ParticipationVolunteeringReview.objects.filter(participation=self)
-#         if len(review) > 0:
-#             return review[0]
-#
-#         else:
-#             return None
-#
-#     def delete_participation(self):
-#         if self.get_participation_type() == ParticipationType.PARTICIPANT:
-#             self.event.decrement_participant()
-#
-#         if self.get_participation_type() == ParticipationType.VOLUNTEER:
-#             self.event.decrement_volunteer()
-#
-#         self.delete()
-#
-#
-# class EventVolunteerParticipation(EventParticipation):
-#     granted_manager_access = models.BooleanField(default=False)
-#
-#     def get_participation_type(self):
-#         return ParticipationType.VOLUNTEER
-#
-#     def get_granted_manager_access(self):
-#         return self.granted_manager_access
-#
-#     def set_as_manager(self):
-#         if self.check_in_time is None:
-#             raise InvalidCheckInCheckOutException('User must check in before being granted a managerial role')
-#
-#         self.granted_manager_access = True
-#         self.save()
-#
-#
 class ProjectContribution:
     pass
-
-
-#     event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
-#     contributor = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
-#
-#     contribution_time = models.DateTimeField(auto_now=True)
-#     has_left_forum = models.BooleanField(default=False)
-#
-#     def create_review(self, rating, comment):
-#         return ContributionReview.objects.create(
-#             contribution=self,
-#             event_rating=rating,
-#             event_comment=comment,
-#         )
-#
-#     def get_review(self):
-#         review = ContributionReview.objects.filter(contribution=self)
-#         if len(review) > 0:
-#             return review[0]
-#
-#         else:
-#             return None
-
-
-class EventParticipationSerializer(serializers.ModelSerializer):
-    event_data = serializers.SerializerMethodField(method_name='get_event_data')
-    status = serializers.SerializerMethodField(method_name='get_participation_status')
-
-    def get_participation_status(self, event_participation):
-        return event_participation.get_status()
-
-    def get_event_data(self, event_participation):
-        return BaseEventSerializer(event_participation.event).data
-
-    class Meta:
-        model = EventParticipation
-        fields = [
-            'event_data',
-            'registration_time',
-            'status',
-            'check_in_time',
-            'check_out_time',
-            'participant',
-            'has_left_forum',
-        ]
-
-
-# class BaseEventParticipationSerializer(serializers.ModelSerializer):
-#     def to_representation(self, event_participation):
-#         serialized_data = EventParticipationSerializer(event_participation).data
-#         if isinstance(event_participation, EventVolunteerParticipation):
-#             serialized_data['granted_manager_access'] = event_participation.get_granted_manager_access()
-#
-#         return serialized_data
-#
-#     class Meta:
-#         model = EventParticipation
-#         fields = '__all__'
-
-
-class ProjectContributionSerializer(serializers.ModelSerializer):
-    event_data = serializers.SerializerMethodField(method_name='get_event_data')
-
-    def get_event_data(self, event_participation):
-        return BaseEventSerializer(event_participation.event).data
-
-    class Meta:
-        model = ProjectContribution
-        fields = [
-            'event_data',
-            'contribution_time',
-            'contributor',
-            'has_left_forum',
-        ]
