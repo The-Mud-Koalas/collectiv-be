@@ -74,6 +74,7 @@ def serve_participant_volunteer_leave_events(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_self_check_in_confirmation(request):
     """
     This view serves as the endpoint to allow user to perform
@@ -96,6 +97,7 @@ def serve_participation_self_check_in_confirmation(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_self_check_out_confirmation(request):
     """
     This view serves as the endpoint to allow user to perform
@@ -118,6 +120,7 @@ def serve_participation_self_check_out_confirmation(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_automated_check_out(request):
     """
     This view serves as the endpoint to automatically check out user
@@ -142,6 +145,7 @@ def serve_participation_automated_check_out(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_aided_check_in(request):
     """
     This view serves as the endpoint to allow event managers to check in
@@ -165,6 +169,7 @@ def serve_participation_aided_check_in(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_aided_check_out(request):
     """
     This view serves as the endpoint to allow event managers to
@@ -188,6 +193,7 @@ def serve_participation_aided_check_out(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_assisted_check_in(request):
     """
     This view serves as the endpoint to allow event managers to
@@ -209,6 +215,7 @@ def serve_volunteer_assisted_check_in(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_self_check_out(request):
     """
     This view serves as the endpoint to allow volunteers
@@ -231,6 +238,7 @@ def serve_volunteer_self_check_out(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_grant_managerial_role(request):
     """
     This view serves as the endpoint to allow event managers (i.e. creator/volunteer
@@ -250,18 +258,20 @@ def serve_volunteer_grant_managerial_role(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_mark_participant_contribution(request):
     """
     This view serves as the endpoint for volunteers to mark participant
     contribution.
     ----------------------------------------------------------
     request-body must contain:
-    project_id: UUID string
+    event_id: UUID string
     contributor_email_phone: string
+    amount_contributed: integer
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
-    response_data = {'message': 'Participant contribution has been added successfully'}
+    contribution_data = contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
+    response_data = {'message': 'Participant contribution has been added successfully', 'data': contribution_data}
     return Response(data=response_data)
 
 

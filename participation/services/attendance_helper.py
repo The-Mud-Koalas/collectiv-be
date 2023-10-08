@@ -1,5 +1,6 @@
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from communalspace.settings import POINTS_PER_ATTENDANCE
+from event.choices import EventType
 from event.exceptions import InvalidCheckInCheckOutException
 
 
@@ -45,12 +46,12 @@ def check_in_user(user, attendable_event, attendable_participation):
 def check_out_user(user, attendable_participation):
     check_out_data = attendable_participation.check_out()
     user.remove_currently_attended_event()
-    return handle_check_out_reward_grant(user, check_out_data, attendable_participation)
+    return handle_reward_grant(user, check_out_data, attendable_participation)
 
 
-def handle_check_out_reward_grant(user, check_out_data, attendable_participation):
-    reward_and_check_out_data = {**check_out_data}
-    if attendable_participation.is_eligible_for_reward() and not attendable_participation.has_been_rewarded():
+def handle_reward_grant(user, activity_data, attendable_participation):
+    reward_and_check_out_data = {**activity_data}
+    if attendable_participation.is_eligible_for_reward():
         user.add_reward(POINTS_PER_ATTENDANCE)
         attendable_participation.set_rewarded(True)
         reward_and_check_out_data['is_rewarded'] = True
@@ -60,3 +61,7 @@ def handle_check_out_reward_grant(user, check_out_data, attendable_participation
 
     return reward_and_check_out_data
 
+
+def validate_event_is_initiative(event):
+    if event.get_type() != EventType.INITIATIVE:
+        raise InvalidRequestException(f'Event with ID {event.get_id()} is not an initiative')

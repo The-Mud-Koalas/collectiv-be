@@ -11,7 +11,6 @@ class EventStatus(models.TextChoices):
 class AttendanceActivityType(models.TextChoices):
     CHECK_IN = 'check-in'
     CHECK_OUT = 'check-out'
-    CONTRIBUTION = 'contribution'
 
 
 class EventType:

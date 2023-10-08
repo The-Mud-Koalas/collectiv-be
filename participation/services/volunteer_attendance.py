@@ -7,7 +7,6 @@ from .attendance_helper import (
     validate_user_is_attending_event,
     check_in_user,
     check_out_user,
-    validate_assisting_and_checking_in_users_are_different,
 )
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.firebase_admin import firebase as firebase_utils

@@ -2,6 +2,8 @@ from ..models import (
     Event,
     EventCategory,
     GoalKind,
+    Initiative,
+    Project,
     Tags
 )
 from ..choices import EventType
@@ -33,6 +35,42 @@ def get_event_by_id_or_raise_exception_thread_safe(event_id):
         return matching_event[0]
     else:
         raise ObjectDoesNotExist(f'Event with id {event_id} does not exist')
+
+
+def get_initiative_by_id_or_raise_exception(initiative_id):
+    matching_initiative = Initiative.objects.filter(id=initiative_id)
+
+    if matching_initiative.exists():
+        return matching_initiative[0]
+    else:
+        raise ObjectDoesNotExist(f'Initiative with id {initiative_id} does not exist')
+
+
+def get_initiative_by_id_or_raise_exception_thread_safe(initiative_id):
+    matching_initiative = Initiative.objects.filter(id=initiative_id).select_for_update()
+
+    if matching_initiative.exists():
+        return matching_initiative[0]
+    else:
+        raise ObjectDoesNotExist(f'Initiative with id {initiative_id} does not exist')
+
+
+def get_project_by_id_or_raise_exception(project_id):
+    matching_project = Project.objects.filter(id=project_id)
+
+    if matching_project.exists():
+        return matching_project
+    else:
+        raise ObjectDoesNotExist(f'Project with id {project_id} does not exist')
+
+
+def get_project_by_id_or_raise_exception_thread_safe(project_id):
+    matching_project = Project.objects.filter(id=project_id).select_for_update()
+
+    if matching_project.exists():
+        return matching_project[0]
+    else:
+        raise ObjectDoesNotExist(f'Project with id {project_id} does not exist')
 
 
 def convert_tag_names_to_tag(tag_names):

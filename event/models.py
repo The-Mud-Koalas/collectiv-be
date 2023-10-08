@@ -56,6 +56,8 @@ class Event(PolymorphicModel):
     end_date_time = models.DateTimeField()
 
     volunteer_registration_enabled = models.BooleanField(default=True)
+
+    current_num_of_participants = models.PositiveIntegerField(default=0)
     current_num_of_volunteers = models.PositiveIntegerField(default=0)
 
     location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
@@ -69,6 +71,12 @@ class Event(PolymorphicModel):
     objects = EventManager()
 
     def get_type(self):
+        raise NotImplementedError
+
+    def get_participation_by_participant(self, participant):
+        raise NotImplementedError
+
+    def add_participant(self, participant):
         raise NotImplementedError
 
     def get_volunteer_registration_enabled(self):
@@ -118,11 +126,20 @@ class Event(PolymorphicModel):
     def get_tags(self):
         return self.tags.all()
 
+    def decrement_participant(self):
+        if self.current_num_of_participants > 0:
+            self.current_num_of_participants -= 1
+            self.save()
+
+    def get_current_num_of_participants(self):
+        return self.current_num_of_participants
+
     def get_all_type_participation_by_participant(self, participant):
-        raise NotImplementedError
+        return self.get_volunteer_participation_by_participant(volunteer=participant) or \
+               self.get_participation_by_participant(participant=participant)
 
     def check_all_type_participation(self, participant):
-        raise NotImplementedError
+        return self.get_all_type_participation_by_participant(participant=participant).exists()
 
     def get_volunteer_participation_by_participant(self, volunteer):
         return self.volunteerparticipation_set.filter(participant=volunteer).first()
@@ -169,16 +186,12 @@ class Event(PolymorphicModel):
 
 class Initiative(Event):
     participation_registration_enabled = models.BooleanField(default=True)
-    current_num_of_participants = models.PositiveIntegerField(default=0)
 
     def get_type(self):
         return EventType.INITIATIVE
 
     def get_participation_registration_enabled(self):
         return self.participation_registration_enabled
-
-    def get_current_num_of_participants(self):
-        return self.current_num_of_participants
 
     def add_participant(self, participant):
         initiative_participation = self.initiativeparticipation_set.create(participant=participant)
@@ -187,20 +200,8 @@ class Initiative(Event):
 
         return initiative_participation
 
-    def decrement_participant(self):
-        if self.current_num_of_participants > 0:
-            self.current_num_of_participants -= 1
-            self.save()
-
     def get_participation_by_participant(self, participant):
         return self.initiativeparticipation_set.filter(participant=participant).first()
-
-    def get_all_type_participation_by_participant(self, participant):
-        return self.get_volunteer_participation_by_participant(volunteer=participant) or \
-               self.get_participation_by_participant(participant=participant)
-
-    def check_all_type_participation(self, participant):
-        return self.get_all_type_participation_by_participant(participant=participant).exists()
 
 
 class GoalKind(models.Model):
@@ -219,43 +220,11 @@ class Project(Event):
     measurement_unit = models.CharField(max_length=30)
     goal_kind = models.ForeignKey('event.GoalKind', on_delete=models.RESTRICT, null=True, default=None)
 
-    current_num_of_contributor = models.PositiveIntegerField(default=0)
-
     def get_type(self):
         return EventType.PROJECT
 
-    def get_contribution_by_contributor(self, contributor):
-        return self.contributionparticipation_set.filter(participant=contributor).first()
-
-    def add_contributor(self, contributor):
-        contributor_participation = self.contributionparticipation_set.get_or_create(participant=contributor)
-        self.current_num_of_contributor += 1
-        self.save()
-
-        return contributor_participation
-
-    def get_all_type_participation_by_participant(self, participant):
-        return self.get_volunteer_participation_by_participant(volunteer=participant) or \
-               self.get_contribution_by_contributor(contributor=participant)
-
-    def check_all_type_participation(self, participant):
-        return self.get_all_type_participation_by_participant(participant=participant).exists()
-
-    def get_transactions(self):
-        return self.transactionhistory_set.all()
-
-    def increase_progress(self, amount_to_increase):
-        self.transactionhistory_set.create(transaction_value=amount_to_increase)
-        self.progress = self.progress + amount_to_increase
-        self.save()
-
-    def decrease_progress(self, amount_to_decrease):
-        if self.progress < amount_to_decrease:
-            raise ValueError('Amount to decrease must not exceed the current progress')
-
-        self.transactionhistory_set.creaete(transaction_value=-amount_to_decrease)
-        self.progress = self.progress - amount_to_decrease
-        self.save()
+    def get_participation_by_participant(self, participant):
+        return self.contributionparticipation_set.filter(participant=participant).first()
 
     def get_goal(self):
         return self.goal
@@ -265,6 +234,28 @@ class Project(Event):
 
     def get_measurement_unit(self):
         return self.measurement_unit
+
+    def increase_progress(self, amount_to_increase):
+        self.progress = self.progress + amount_to_increase
+        self.save()
+
+    def add_participant(self, participant):
+        contributor_participation, created = self.contributionparticipation_set.get_or_create(participant=participant)
+
+        if created:
+            self.current_num_of_participants += 1
+            self.save()
+
+        return contributor_participation
+
+    def register_contribution(self, contributing_user, amount_contributed):
+        contribution_participation = self.add_participant(contributing_user)
+        self.increase_progress(amount_contributed)
+        contribution_participation.register_contribution(amount_contributed)
+        return contribution_participation
+
+    def get_transactions_per_day(self):
+        pass
 
 
 class EventParticipation(PolymorphicModel):
@@ -347,7 +338,7 @@ class AttendableEventParticipation(EventParticipation):
 
     def is_eligible_for_reward(self):
         return (self.overall_duration_in_seconds >= MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY and
-                not self.has_violated_geofencing_rule)
+                not self.has_violated_geofencing_rule and not self.has_been_rewarded())
 
     def get_is_currently_attending(self):
         return self.is_currently_attending
@@ -404,6 +395,7 @@ class InitiativeParticipation(AttendableEventParticipation):
         check_out_data = self.check_out()
         if not self._user_is_compliance_to_geofencing_rule_while_checking_out(latitude, longitude) or \
                 self.get_event().get_status() != EventStatus.ON_GOING.value:
+
             self.set_violated_geofencing_rule()
 
         return {
@@ -436,18 +428,33 @@ class VolunteerParticipation(AttendableEventParticipation):
 
 class ContributionParticipation(EventParticipation):
     event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
+    total_contribution = models.PositiveIntegerField(default=0)
 
     def can_submit_review(self):
         return True
 
     def is_eligible_for_reward(self):
-        return True
+        return not self.has_been_rewarded()
 
     def get_participation_type(self):
         return ParticipationType.CONTRIBUTOR
 
+    def get_total_contribution(self):
+        return self.total_contribution
+
     def delete_participation(self):
         raise NotImplementedError('Contribution participation cannot be deleted')
+
+    def register_contribution(self, contributed_amount):
+        self.contributionactivity_set.create(contribution=contributed_amount)
+        self.total_contribution += contributed_amount
+        self.save()
+
+
+class ContributionActivity(models.Model):
+    participation = models.ForeignKey('event.ContributionParticipation', on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now=True)
+    contribution = models.PositiveIntegerField(default=0)
 
 
 class AttendableEventParticipationSerializer(serializers.ModelSerializer):
@@ -492,211 +499,6 @@ class AttendanceActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendanceActivity
         fields = '__all__'
-
-
-# class Event(PolymorphicModel):
-#     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
-#     name = models.CharField(max_length=50)
-#     description = models.TextField(null=True)
-#     start_date_time = models.DateTimeField()
-#     end_date_time = models.DateTimeField()
-#
-#     min_num_of_volunteers = models.PositiveIntegerField(default=0)
-#     current_num_of_participants = models.PositiveIntegerField(default=0)
-#     current_num_of_volunteers = models.PositiveIntegerField(default=0)
-#
-#     location = models.ForeignKey('space.Location', on_delete=models.RESTRICT)
-#     creator = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
-#     category = models.ForeignKey('event.EventCategory', on_delete=models.RESTRICT)
-#
-#     status = models.CharField(max_length=10, choices=EventStatus.choices, default=EventStatus.SCHEDULED)
-#     tags = models.ManyToManyField('event.Tags')
-#
-#     event_image_directory = models.TextField(null=True, default=None)
-#
-#     objects = EventManager()
-#
-#     def get_type(self):
-#         return EventType.INITIATIVE
-#
-#     def get_status(self):
-#         return self.status
-#
-#     def set_event_image(self, event_image_directory):
-#         self.event_image_directory = event_image_directory
-#         self.save()
-#
-#     def add_tags(self, tag):
-#         self.tags.add(tag)
-#         self.save()
-#
-#     def get_event_image_directory(self):
-#         return self.event_image_directory
-#
-#     def get_name(self):
-#         return self.name
-#
-#     def get_id(self):
-#         return str(self.id)
-#
-#     def get_location(self):
-#         return self.location
-#
-#     def get_creator(self):
-#         return self.creator
-#
-#     def get_creator_id(self):
-#         return self.get_creator().get_user_id()
-#
-#     def get_category(self):
-#         return self.category
-#
-#     def get_category_name(self):
-#         return self.get_category().get_name()
-#
-#     def get_start_date_time_iso_format(self):
-#         return self.start_date_time.isoformat()
-#
-#     def get_end_date_time_iso_format(self):
-#         return self.end_date_time.isoformat()
-#
-#     def get_tags(self):
-#         return self.tags.all()
-#
-#     def get_participation_by_participant(self, participant):
-#         matching_participation = self.eventparticipation_set.filter(participant=participant)
-#
-#         if len(matching_participation) > 0:
-#             return matching_participation[0]
-#
-#         else:
-#             return None
-#
-#     def check_participation(self, participant):
-#         return self.get_participation_by_participant(participant=participant) is not None
-#
-#     def add_participant(self, participant):
-#         event_participation = EventParticipation.objects.create(
-#             event=self,
-#             participant=participant,
-#         )
-#
-#         self.current_num_of_participants += 1
-#         self.save()
-#
-#         return event_participation
-#
-#     def add_volunteer(self, volunteer):
-#         event_participation = EventVolunteerParticipation.objects.create(
-#             event=self,
-#             participant=volunteer,
-#         )
-#
-#         self.current_num_of_volunteers += 1
-#         self.save()
-#
-#         return event_participation
-#
-#     def decrement_participant(self):
-#         if self.current_num_of_participants > 0:
-#             self.current_num_of_participants -= 1
-#             self.save()
-#
-#     def decrement_volunteer(self):
-#         if self.current_num_of_volunteers > 0:
-#             self.current_num_of_volunteers -= 1
-#             self.save()
-#
-#     def is_active(self):
-#         return self.status in (EventStatus.SCHEDULED, EventStatus.ON_GOING)
-#
-#     def is_ongoing(self):
-#         return self.status == EventStatus.ON_GOING
-#
-#     def check_user_is_inside_event(self, user_latitude, user_longitude):
-#         return self.location.coordinate_is_inside_location(user_latitude, user_longitude)
-#
-#     def check_user_is_granted_manager_access(self, user):
-#         """
-#         1. User is the creator of event, or
-#         2. User is a volunteer and has been granted access by other granter
-#         """
-#         if user == self.get_creator():
-#             return True
-#
-#         participation = self.get_participation_by_participant(user)
-#         return isinstance(participation, EventVolunteerParticipation) and participation.get_granted_manager_access()
-#
-#     def set_status(self, status):
-#         self.status = status
-#         self.save()
-
-
-# class Project(Event):
-#     goal = models.FloatField()
-#     progress = models.FloatField(default=0)
-#     measurement_unit = models.CharField(max_length=30)
-#     goal_kind = models.ForeignKey('event.GoalKind', on_delete=models.RESTRICT, null=True, default=None)
-#
-#     def get_participation_by_participant(self, participant):
-#         raise NotImplementedError()
-#
-#     def check_participation(self, participant):
-#         raise NotImplementedError()
-#
-#     def add_participant(self, participant):
-#         raise NotImplementedError()
-#
-#     def get_contribution_by_contributor(self, contributor):
-#         matching_participation = self.projectcontribution_set.filter(contributor=contributor)
-#
-#         if len(matching_participation) > 0:
-#             return matching_participation[0]
-#
-#         else:
-#             return None
-#
-#     def add_contributor(self, contributor):
-#         event_participation = ProjectContribution.objects.create(
-#             event=self,
-#             contributor=contributor,
-#         )
-#
-#         return event_participation
-#
-#     def get_transactions(self):
-#         return self.transactionhistory_set.all()
-#
-#     def increase_progress(self, amount_to_increase):
-#         TransactionHistory.objects.create(
-#             project=self,
-#             transaction_value=amount_to_increase
-#         )
-#         self.progress = self.progress + amount_to_increase
-#         self.save()
-#
-#     def decrease_progress(self, amount_to_decrease):
-#         if self.progress < amount_to_decrease:
-#             raise ValueError('Amount to decrease must not exceed the current progress')
-#
-#         TransactionHistory.objects.create(
-#             project=self,
-#             transaction_value=-amount_to_decrease
-#         )
-#         self.progress = self.progress - amount_to_decrease
-#         self.save()
-#
-#     def get_type(self):
-#         return EventType.PROJECT
-#
-#     def get_goal(self):
-#         return self.goal
-#
-#     def get_progress(self):
-#         return self.progress
-#
-#     def get_measurement_unit(self):
-#         return self.measurement_unit
 
 
 class TransactionHistory(models.Model):
@@ -749,6 +551,7 @@ class EventSerializer(serializers.ModelSerializer):
             'description',
             'volunteer_registration_enabled',
             'current_num_of_volunteers',
+            'current_num_of_participants',
             'status',
             'event_type',
             'event_location',
@@ -764,7 +567,6 @@ class InitiativeSerializer(serializers.ModelSerializer):
     def to_representation(self, initiative):
         serialized_data = EventSerializer(initiative).data
         serialized_data['participation_registration_enabled'] = initiative.get_participation_registration_enabled()
-        serialized_data['current_num_of_participants'] = initiative.get_current_num_of_participants()
         return serialized_data
 
     class Meta:
@@ -778,7 +580,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         serialized_data['goal'] = project.get_goal()
         serialized_data['measurement_unit'] = project.get_measurement_unit()
         serialized_data['progress'] = project.get_progress()
-        serialized_data['transactions'] = TransactionHistorySerializer(project.get_transactions(), many=True).data
+        # serialized_data['transactions'] = TransactionHistorySerializer(project.get_transactions_per_day(), many=True).data
         return serialized_data
 
     class Meta:
