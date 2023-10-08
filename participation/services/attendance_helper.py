@@ -1,4 +1,4 @@
-from communalspace.exceptions import InvalidRequestException
+from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from communalspace.settings import POINTS_PER_ATTENDANCE
 from event.exceptions import InvalidCheckInCheckOutException
 
@@ -47,3 +47,19 @@ def self_check_out_user(user, attendable_participation, user_latitude, user_long
     check_out_data = attendable_participation.self_check_out(user_latitude, user_longitude)
     user.remove_currently_attended_event()
     return handle_check_out_reward_grant(user, check_out_data, attendable_participation)
+
+
+def validate_user_is_a_volunteer(participation):
+    if participation is None or participation.get_participation_type() != 'volunteer':
+        raise InvalidRequestException('User is not a volunteer of event')
+
+
+def check_out_user(user, attendable_participation):
+    check_out_data = attendable_participation.check_out()
+    user.remove_currently_attended_event()
+    return handle_check_out_reward_grant(user, check_out_data, attendable_participation)
+
+
+def validate_assisting_user_is_manager_of_event(event, assisting_user):
+    if not event.check_user_is_granted_manager_access(assisting_user):
+        raise RestrictedAccessException('Assisting user has not been granted manager access')

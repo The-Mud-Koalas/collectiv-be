@@ -1,6 +1,5 @@
 # TODO: FIX CONTRIBUTION
-from .attendance_helper import validate_event_is_on_going
-from .volunteer_attendance import validate_assisting_user_is_manager_of_event
+from .attendance_helper import validate_event_is_on_going, validate_assisting_user_is_manager_of_event
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils

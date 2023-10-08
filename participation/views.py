@@ -142,6 +142,52 @@ def serve_participation_automated_check_out(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+def serve_participation_aided_check_in(request):
+    """
+    This view serves as the endpoint to allow event managers to check in
+    user to the event initiative.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    participant_email_phone: string Registered email or phone number of the participant
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    check_in_data = participation_attendance.handle_participation_aided_check_in(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked in',
+        'data': check_in_data
+    }
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_participation_aided_check_out(request):
+    """
+    This view serves as the endpoint to allow event managers to
+    check out users to the event initiative.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    participant_email_phone: string Registered email or phone number of the participant
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    check_out_data = participation_attendance.handle_participation_aided_check_out(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked out',
+        'data': check_out_data
+    }
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
 def serve_volunteer_assisted_check_in(request):
     """
     This view serves as the endpoint to allow event managers to

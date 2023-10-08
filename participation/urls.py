@@ -13,6 +13,8 @@ from .views import (
     serve_volunteer_mark_participant_contribution,
     serve_volunteer_self_check_out,
     serve_get_user_contribution,
+    serve_participation_aided_check_in,
+    serve_participation_aided_check_out,
 )
 from django.urls import path
 
@@ -24,6 +26,9 @@ urlpatterns = [
     path('participant/check-in/self/', serve_participation_self_check_in_confirmation),
     path('participant/check-out/self/', serve_participation_self_check_out_confirmation),
     path('participant/check-out/automated/', serve_participation_automated_check_out),
+
+    path('participant/check-in/assisted/', serve_participation_aided_check_in),
+    path('participant/check-out/assisted/', serve_participation_aided_check_out),
 
     path('project/contribution/register/', serve_volunteer_mark_participant_contribution),
 
