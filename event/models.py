@@ -265,6 +265,9 @@ class EventParticipation(PolymorphicModel):
     rewarded = models.BooleanField(default=False)
     submitted_review = models.BooleanField(default=False)
 
+    def get_event(self):
+        raise NotImplementedError
+
     def get_participation_type(self):
         raise NotImplementedError
 
@@ -436,6 +439,9 @@ class ContributionParticipation(EventParticipation):
     event = models.ForeignKey('event.Project', on_delete=models.CASCADE)
     total_contribution = models.PositiveIntegerField(default=0)
 
+    def get_event(self):
+        return self.event
+
     def is_eligible_for_reward(self):
         return not self.has_been_rewarded()
 
@@ -476,7 +482,7 @@ class ContributionParticipationSerializer(serializers.ModelSerializer):
     activities = serializers.SerializerMethodField(method_name='get_activity_data')
 
     def get_activity_data(self, instance):
-        return ContributionActivitySerializer(instance.get_contributions, many=True).data
+        return ContributionActivitySerializer(instance.get_contributions(), many=True).data
 
     class Meta:
         model = ContributionParticipation
@@ -487,9 +493,21 @@ class ContributionParticipationSerializer(serializers.ModelSerializer):
 
 
 class EventParticipationSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField(method_name='get_type')
+
+    def get_type(self, instance):
+        return instance.get_participation_type()
+
     class Meta:
         model = EventParticipation
-        fields = '__all__'
+        fields = [
+            'type',
+            'participant',
+            'registration_time',
+            'has_left_forum',
+            'rewarded',
+            'submitted_review',
+        ]
 
 
 class AttendableEventParticipationSerializer(serializers.ModelSerializer):
@@ -510,19 +528,34 @@ class AttendableEventParticipationSerializer(serializers.ModelSerializer):
 
 class BaseEventParticipationSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
-        base_event_data = EventParticipationSerializer(instance).data
+        base_participation_data = EventParticipationSerializer(instance).data
 
         if isinstance(instance, AttendableEventParticipation):
             return {
-                **base_event_data,
+                **base_participation_data,
                 **AttendableEventParticipationSerializer(instance).data
             }
 
         else:
             return {
-                **base_event_data,
+                **base_participation_data,
                 **ContributionParticipationSerializer(instance).data
             }
+
+    class Meta:
+        model = EventParticipation
+        fields = '__all__'
+
+
+class ParticipationSerializerWithEventData(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        event_data = EventSerializer(instance.get_event()).data
+        participation_data = BaseEventParticipationSerializer(instance).data
+
+        return {
+            'event': event_data,
+            **participation_data
+        }
 
     class Meta:
         model = EventParticipation
