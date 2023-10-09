@@ -316,6 +316,7 @@ def serve_get_created_events(request):
     created event.
     ----------------------------------------------------------
     request-param may contain:
+    type: initiative/project
     status: past/on going/future
     """
     request_data = request.GET
