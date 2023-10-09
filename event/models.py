@@ -7,13 +7,38 @@ from event.choices import (
     EventType,
     ParticipationType
 )
-from event.managers import EventManager
+from polymorphic.managers import PolymorphicManager
 from polymorphic.models import PolymorphicModel
 from rest_framework import serializers
 from review.models import ParticipationReview
 from space.models import LocationSerializer
 
 import uuid
+
+
+class EventManager(PolymorphicManager):
+    def filter_active(self):
+        return self.filter(status__in=(EventStatus.SCHEDULED, EventStatus.ON_GOING))
+
+
+class EventParticipationManager(PolymorphicManager):
+    def filter_by_event(self, event):
+        event_participation_ids = [
+            *InitiativeParticipation
+            .objects
+            .filter(event__id=event.get_id())
+            .values_list('id', flat=True),
+            *VolunteerParticipation
+            .objects
+            .filter(event__id=event.get_id())
+            .values_list('id', flat=True),
+            *ContributionParticipation
+            .objects
+            .filter(event__id=event.get_id())
+            .values_list('id', flat=True)
+        ]
+
+        return self.filter(id__in=event_participation_ids)
 
 
 class Tags(models.Model):
@@ -80,6 +105,9 @@ class Event(PolymorphicModel):
     def add_participant(self, participant):
         raise NotImplementedError
 
+    def get_all_participants(self):
+        raise NotImplementedError
+
     def get_volunteer_registration_enabled(self):
         return self.volunteer_registration_enabled
 
@@ -132,8 +160,18 @@ class Event(PolymorphicModel):
             self.current_num_of_participants -= 1
             self.save()
 
-    def get_current_num_of_participants(self):
-        return self.current_num_of_participants
+    def get_all_volunteers(self):
+        return self.volunteerparticipation_set.all()
+
+    def get_all_type_participations(self):
+        return EventParticipation.objects.filter_by_event(event=self)
+
+    def get_reviews(self):
+        reviews = ParticipationReview.objects.none()
+        for participation in self.get_all_type_participations():
+            reviews = reviews | participation.get_reviews()
+
+        return reviews
 
     def get_all_type_participation_by_participant(self, participant):
         return self.get_volunteer_participation_by_participant(volunteer=participant) or \
@@ -186,20 +224,19 @@ class Event(PolymorphicModel):
 
     # Analytics methods
     def get_event_registration_per_day(self):
-        return (self.eventparticipation_set
-                    .annotate(registration_date=Trunc('registration_time', 'day'))
-                    .values('registration_date')
-                    .annotate(models.Count('registration_date'))
-                    .order_by('registration_date'))
-
-    def get_event_reviews(self):
-        pass
+        return (self.get_all_type_participations()
+                .annotate(registration_date=Trunc('registration_time', 'day'))
+                .values('registration_date')
+                .annotate(models.Count('registration_date'))
+                .order_by('registration_date'))
 
     def get_event_average_rating(self):
         """
         Return average rating of event
         """
-        pass
+        return (self.get_reviews()
+                .aggregate(rating_average=models.Avg('event_rating'))
+                .get('rating_average'))
 
 
 class Initiative(Event):
@@ -220,6 +257,14 @@ class Initiative(Event):
 
     def get_participation_by_participant(self, participant):
         return self.initiativeparticipation_set.filter(participant=participant).first()
+
+    def get_all_participants(self):
+        return self.initiativeparticipation_set.all()
+
+    def get_participants_average_attendance_duration(self):
+        return (self.get_all_participants()
+                .aggregate(average_duration=models.Avg('overall_duration_in_seconds'))
+                .get('average_duration'))
 
 
 class GoalKind(models.Model):
@@ -275,6 +320,9 @@ class Project(Event):
     def get_activities(self):
         return ContributionActivity.objects.filter(participation__event=self).order_by('-timestamp')
 
+    def get_all_participants(self):
+        return self.contributionparticipation_set.all()
+
 
 class EventParticipation(PolymorphicModel):
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
@@ -282,6 +330,8 @@ class EventParticipation(PolymorphicModel):
     has_left_forum = models.BooleanField(default=False)
     rewarded = models.BooleanField(default=False)
     submitted_review = models.BooleanField(default=False)
+
+    objects = EventParticipationManager()
 
     def get_event(self):
         raise NotImplementedError
@@ -294,6 +344,12 @@ class EventParticipation(PolymorphicModel):
 
     def is_eligible_for_reward(self):
         raise NotImplementedError
+
+    def get_reviews(self):
+        return self.participationreview_set.all()
+
+    def get_review(self):
+        return self.get_reviews().first()
 
     def can_submit_review(self):
         return not self.has_submitted_review()
@@ -383,9 +439,9 @@ class AttendableEventParticipation(EventParticipation):
     def check_out(self):
         check_out_activity = self.add_activity(AttendanceActivityType.CHECK_OUT.value)
         check_in_activity = (self.get_activities()
-                                 .filter(type=AttendanceActivityType.CHECK_IN.value)
-                                 .order_by('-timestamp')
-                                 .first())
+                             .filter(type=AttendanceActivityType.CHECK_IN.value)
+                             .order_by('-timestamp')
+                             .first())
 
         attendance_duration = (check_out_activity.get_timestamp() - check_in_activity.get_timestamp()).total_seconds()
         self.overall_duration_in_seconds += attendance_duration
@@ -422,7 +478,6 @@ class InitiativeParticipation(AttendableEventParticipation):
         check_out_data = self.check_out()
         if not self._user_is_compliance_to_geofencing_rule_while_checking_out(latitude, longitude) or \
                 self.get_event().get_status() != EventStatus.ON_GOING.value:
-
             self.set_violated_geofencing_rule()
 
         return {
@@ -700,24 +755,3 @@ class BaseEventSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class InitiativeAnalyticsSerializer(serializers.ModelSerializer):
-    @staticmethod
-    def get_registration_history(event):
-        return [
-            {**day_data, 'registration_date': day_data['registration_date']}
-            for day_data
-            in event.get_event_registration_per_day()
-        ]
-
-    def to_representation(self, event):
-        serialized_data = BaseEventSerializer(event).data
-        serialized_data['registration_history'] = self.get_registration_history(event)
-        return serialized_data
-
-    class Meta:
-        model = Event
-        fields = '__all__'
-
-
-class ProjectContribution:
-    pass

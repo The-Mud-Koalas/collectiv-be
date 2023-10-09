@@ -4,7 +4,6 @@ from .views import (
     serve_create_event_category,
     serve_get_all_goal_kinds,
     serve_get_all_tags,
-    serve_get_event_analytics,
     serve_get_event_by_id,
     serve_get_event_categories,
     serve_get_event_image_by_id,
@@ -17,9 +16,7 @@ from .views import (
     serve_update_project_progress,
 )
 
-
 urlpatterns = [
-    path('analytics/', serve_get_event_analytics),
     path('category/create/', serve_create_event_category),
     path('category/all/', serve_get_event_categories),
     path('create/', serve_create_event),
