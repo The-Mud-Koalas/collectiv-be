@@ -5,9 +5,11 @@
 """
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from django.core.exceptions import ObjectDoesNotExist
-from event.choices import ParticipationType, ParticipationStatus, EventStatus
+from event.choices import ParticipationType, ParticipationStatus, EventStatus, EventType
 from event.models import (
     Event,
+    Project,
+    Initiative,
     InitiativeParticipation,
     VolunteerParticipation,
     AttendableEventParticipation,
@@ -64,7 +66,17 @@ def handle_get_user_contributions(user):
 
 def handle_get_created_events(request_data, user):
     desired_event_status = _get_event_status_selector_from_participation_status(request_data.get('status'))
-    return Event.objects.filter(creator=user, status__in=desired_event_status)
+
+    if request_data.get('type') == EventType.PROJECT:
+        events = Project.objects.filter(creator=user, status__in=desired_event_status)
+
+    elif request_data.get('type') == EventType.INITIATIVE:
+        events = Initiative.objects.filter(creator=user, status__in=desired_event_status)
+
+    else:
+        events = Event.objects.filter(creator=user, status__in=desired_event_status)
+
+    return events
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
