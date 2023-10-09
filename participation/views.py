@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
+from event.models import BaseEventSerializer, ParticipationSerializerWithEventData
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from communalspace.decorators import firebase_authenticated
@@ -10,7 +11,6 @@ from participation.services import (
     volunteer_attendance,
     viewing_participation,
 )
-from event.models import BaseEventParticipationSerializer, ProjectContributionSerializer
 
 import json
 
@@ -29,7 +29,7 @@ def serve_register_user_participation_to_event(request):
     event_id: UUID string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    participation.handle_register_user_participation_to_event(request_data, request.user)
+    participation.handle_register_user_participation_to_initiative(request_data, request.user)
     response_data = {'message': 'Participant is successfully added'}
     return Response(data=response_data)
 
@@ -74,6 +74,7 @@ def serve_participant_volunteer_leave_events(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_self_check_in_confirmation(request):
     """
     This view serves as the endpoint to allow user to perform
@@ -85,14 +86,18 @@ def serve_participation_self_check_in_confirmation(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    participation_attendance.handle_participation_self_check_in_confirmation(request_data, request.user)
-    response_data = {'message': 'Participant successfully checked in'}
+    check_in_data = participation_attendance.handle_participation_self_check_in_confirmation(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked in',
+        'data': check_in_data
+    }
     return Response(data=response_data)
 
 
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_self_check_out_confirmation(request):
     """
     This view serves as the endpoint to allow user to perform
@@ -104,14 +109,18 @@ def serve_participation_self_check_out_confirmation(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    participation_attendance.handle_participation_self_check_out_confirmation(request_data, request.user)
-    response_data = {'message': 'Participant successfully checked out'}
+    check_out_data = participation_attendance.handle_participation_self_check_out_confirmation(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked out',
+        'data': check_out_data
+    }
     return Response(data=response_data)
 
 
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_participation_automated_check_out(request):
     """
     This view serves as the endpoint to automatically check out user
@@ -123,14 +132,68 @@ def serve_participation_automated_check_out(request):
     longitude: float
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    check_out_status = participation_attendance.handle_participation_automatic_check_out(request_data, request.user)
-    response_data = {'checked_out': check_out_status}
+    check_out_data = participation_attendance.handle_participation_automatic_check_out(request_data, request.user)
+
+    if check_out_data:
+        response_data = {'checked_out': True, 'data': check_out_data}
+    else:
+        response_data = {'checked_out': False}
+
     return Response(data=response_data)
 
 
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
+def serve_participation_aided_check_in(request):
+    """
+    This view serves as the endpoint to allow event managers to check in
+    user to the event initiative.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    participant_email_phone: string Registered email or phone number of the participant
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    check_in_data = participation_attendance.handle_participation_aided_check_in(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked in',
+        'data': check_in_data
+    }
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
+def serve_participation_aided_check_out(request):
+    """
+    This view serves as the endpoint to allow event managers to
+    check out users to the event initiative.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    latitude: float
+    longitude: float
+    participant_email_phone: string Registered email or phone number of the participant
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    check_out_data = participation_attendance.handle_participation_aided_check_out(request_data, request.user)
+    response_data = {
+        'message': 'Participant successfully checked out',
+        'data': check_out_data
+    }
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_assisted_check_in(request):
     """
     This view serves as the endpoint to allow event managers to
@@ -144,14 +207,15 @@ def serve_volunteer_assisted_check_in(request):
     volunteer_email_phone: string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    volunteer_attendance.handle_volunteer_assisted_check_in(request_data, request.user)
-    response_data = {'message': 'Volunteer successfully checked in'}
+    check_in_data = volunteer_attendance.handle_volunteer_assisted_check_in(request_data, request.user)
+    response_data = {'message': 'Volunteer successfully checked in', 'data': check_in_data}
     return Response(data=response_data)
 
 
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_self_check_out(request):
     """
     This view serves as the endpoint to allow volunteers
@@ -166,14 +230,15 @@ def serve_volunteer_self_check_out(request):
     event_id: UUID string
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    volunteer_attendance.handle_volunteer_self_check_out(request_data, request.user)
-    response_data = {'message': 'Volunteer successfully checked out'}
+    check_out_data = volunteer_attendance.handle_volunteer_self_check_out(request_data, request.user)
+    response_data = {'message': 'Volunteer successfully checked out', 'data': check_out_data}
     return Response(data=response_data)
 
 
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_grant_managerial_role(request):
     """
     This view serves as the endpoint to allow event managers (i.e. creator/volunteer
@@ -193,97 +258,73 @@ def serve_volunteer_grant_managerial_role(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_volunteer_mark_participant_contribution(request):
     """
     This view serves as the endpoint for volunteers to mark participant
     contribution.
     ----------------------------------------------------------
     request-body must contain:
-    project_id: UUID string
+    event_id: UUID string
     contributor_email_phone: string
+    amount_contributed: integer
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
-    response_data = {'message': 'Participant contribution has been added successfully'}
+    contribution_data = contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
+    response_data = {'message': 'Participant contribution has been added successfully', 'data': contribution_data}
     return Response(data=response_data)
 
 
 @require_GET
 @api_view(['GET'])
 @firebase_authenticated()
-def serve_get_user_past_participation(request):
+def serve_get_user_participations(request):
     """
-    This view serves as the endpoint for participant
-    to retrieve the list of events that they have participated in.
-    (Has checked out)
+    This view serves as the endpoint to get the
+    list of user's participation.
     ----------------------------------------------------------
-    request-param must contain:
+    request-param may contain:
     type: participant/volunteer
+    status: past/on going/future
     """
     request_data = request.GET
-    past_participations = viewing_participation.handle_get_past_participations(
-        request_data,
-        request.user,
-    )
-
-    response_data = BaseEventParticipationSerializer(past_participations, many=True).data
+    participations = viewing_participation.handle_get_user_participations(request_data, request.user)
+    response_data = ParticipationSerializerWithEventData(participations, many=True).data
     return Response(data=response_data)
 
 
 @require_GET
 @api_view(['GET'])
 @firebase_authenticated()
-def serve_get_user_ongoing_participation(request):
+def serve_get_user_contributions(request):
     """
-    This view serves as the endpoint for participant
-    to retrieve the list of events that they are currently
-    participating in (has checked in but has not checked out).
+    This view serves as the endpoint to get the
+    list of user's contribution.
     ----------------------------------------------------------
-    request-param must contain:
-    type: participant/volunteer
+    """
+    participations = viewing_participation.handle_get_user_contributions(request.user)
+    response_data = ParticipationSerializerWithEventData(participations, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_created_events(request):
+    """
+    This view serves as the endpoint to get the list of user's
+    created event.
+    ----------------------------------------------------------
+    request-param may contain:
+    status: past/on going/future
     """
     request_data = request.GET
-    ongoing_participations = viewing_participation.handle_get_ongoing_participations(
-        request_data,
-        request.user,
-    )
-
-    response_data = BaseEventParticipationSerializer(ongoing_participations, many=True).data
+    events = viewing_participation.handle_get_created_events(request_data, request.user)
+    response_data = BaseEventSerializer(events, many=True).data
     return Response(data=response_data)
 
 
-@require_GET
-@api_view(['GET'])
-@firebase_authenticated()
-def serve_get_user_future_participation(request):
-    """
-    This view serves as the endpoint for participant
-    to retrieve the list of events that they will participate
-    in on the future (has not checked in).
-    ----------------------------------------------------------
-    request-param must contain:
-    type: participant/volunteer
-    """
-    request_data = request.GET
-    future_participations = viewing_participation.handle_get_future_participations(
-        request_data,
-        request.user,
-    )
-
-    response_data = BaseEventParticipationSerializer(future_participations, many=True).data
-    return Response(data=response_data)
 
 
-@require_GET
-@api_view(['GET'])
-@firebase_authenticated()
-def serve_get_user_contribution(request):
-    """
-    This view serves as the endpoint to get the list of
-    user's contribution.
-    """
-    user_contributions = viewing_participation.handle_get_user_contribution(request.user)
-    response_data = ProjectContributionSerializer(user_contributions, many=True).data
-    return Response(data=response_data)
 
 
