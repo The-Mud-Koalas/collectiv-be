@@ -1,4 +1,5 @@
 from .views import (
+    serve_get_created_events,
     serve_get_user_participations,
     serve_get_user_contributions,
     serve_register_user_participation_to_event,
@@ -32,4 +33,5 @@ urlpatterns = [
     path('participant/delete/', serve_participant_volunteer_leave_events),
     path('participant/view/', serve_get_user_participations),
     path('contribution/view/', serve_get_user_contributions),
+    path('creator/view/', serve_get_created_events),
 ]

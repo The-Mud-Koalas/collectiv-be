@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
-from event.models import ParticipationSerializerWithEventData
+from event.models import BaseEventSerializer, ParticipationSerializerWithEventData
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from communalspace.decorators import firebase_authenticated
@@ -303,9 +303,27 @@ def serve_get_user_contributions(request):
     ----------------------------------------------------------
     """
     participations = viewing_participation.handle_get_user_contributions(request.user)
-    print(participations)
     response_data = ParticipationSerializerWithEventData(participations, many=True).data
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_created_events(request):
+    """
+    This view serves as the endpoint to get the list of user's
+    created event.
+    ----------------------------------------------------------
+    request-param may contain:
+    status: past/on going/future
+    """
+    request_data = request.GET
+    events = viewing_participation.handle_get_created_events(request_data, request.user)
+    response_data = BaseEventSerializer(events, many=True).data
+    return Response(data=response_data)
+
+
 
 
 
