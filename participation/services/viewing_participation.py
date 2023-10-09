@@ -3,6 +3,8 @@
 2. Get list of ongoing event (check-in but not check-out) participation--volunteer
 3. Get list of future events (not checked in but event status is still active) participation--volunteer
 """
+from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
+from django.core.exceptions import ObjectDoesNotExist
 from event.choices import ParticipationType, ParticipationStatus, EventStatus
 from event.models import (
     Event,
@@ -11,6 +13,7 @@ from event.models import (
     AttendableEventParticipation,
     ContributionParticipation,
 )
+from event.services import utils as event_utils
 
 
 def _get_attendable_user_participations_by_type(user, participation_type):
@@ -62,4 +65,13 @@ def handle_get_user_contributions(user):
 def handle_get_created_events(request_data, user):
     desired_event_status = _get_event_status_selector_from_participation_status(request_data.get('status'))
     return Event.objects.filter(creator=user, status__in=desired_event_status)
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_check_user_registration_to_event(request_data, user):
+    event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    return event.get_all_type_participation_by_participant(user)
+
+
+
 

@@ -1,6 +1,6 @@
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
-from event.models import BaseEventSerializer, ParticipationSerializerWithEventData
+from event.models import BaseEventParticipationSerializer, BaseEventSerializer, ParticipationSerializerWithEventData
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from communalspace.decorators import firebase_authenticated
@@ -322,6 +322,31 @@ def serve_get_created_events(request):
     events = viewing_participation.handle_get_created_events(request_data, request.user)
     response_data = BaseEventSerializer(events, many=True).data
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_check_user_registration_to_event(request):
+    """
+    This view serves as the endpoint to check whether a user has
+    already registered in an event.
+    ----------------------------------------------------------
+    request-param must contain:
+    event_id: UUID string
+    """
+    request_data = request.GET
+    user_participation = viewing_participation.handle_check_user_registration_to_event(request_data, request.user)
+    if user_participation is None:
+        response_data = {'is_registered': False}
+    else:
+        response_data = {
+            'is_registered': True,
+            'data': BaseEventParticipationSerializer(user_participation).data
+        }
+
+    return Response(data=response_data)
+
 
 
 
