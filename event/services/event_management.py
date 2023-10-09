@@ -52,9 +52,6 @@ def handle_update_event_status(request_data, user):
 
 
 def _validate_update_project_progress_request(request_data):
-    if request_data.get('type') not in ('increase', 'decrease'):
-        raise InvalidRequestException('Update type must be increase/decrease')
-
     if not isinstance(request_data.get('amount_to_update'), numbers.Number):
         raise InvalidRequestException('Amount to update must be a number')
 
@@ -70,20 +67,12 @@ def _update_project_progress(event, amount_to_update, update_type):
         event.decrease_progress(amount_to_update)
 
 
-@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist, ValueError))
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_update_project_progress(request_data, user):
-    event = utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
-    validate_event_is_project(event)
-    _validate_event_ownership(event, user)
     _validate_update_project_progress_request(request_data)
-    _update_project_progress(
-        event,
-        request_data.get('amount_to_update'),
-        request_data.get('type')
-    )
-
-
-
-
-
-
+    project = utils.get_project_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
+    _validate_event_ownership(project, user)
+    project.register_contribution(user, request_data.get('amount_to_update'))
+    return {
+        'progress': project.get_progress()
+    }

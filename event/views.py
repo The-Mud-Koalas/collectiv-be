@@ -293,8 +293,11 @@ def serve_update_project_progress(request):
     type: increase/decrease
     """
     request_data = json.loads(request.body.decode('utf-8'))
-    event_management.handle_update_project_progress(request_data, request.user)
-    response_data = {'message': 'Event progress is successfully updated'}
+    update_data = event_management.handle_update_project_progress(request_data, request.user)
+    response_data = {
+        'message': 'Event progress is successfully updated',
+        'data': update_data
+    }
     return Response(data=response_data)
 
 

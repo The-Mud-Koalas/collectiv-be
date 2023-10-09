@@ -22,8 +22,8 @@ def _validate_mark_participation_contribution_request(request_data):
     if not isinstance(request_data.get('amount_contributed'), int):
         raise InvalidRequestException('Amount contributed must be an integer')
 
-    if request_data.get('amount_contributed') <= 0:
-        raise InvalidRequestException('Amount contributed must be a positive integer')
+    if request_data.get('amount_contributed') < 0:
+        raise InvalidRequestException('Amount contributed must be a non-negative number')
 
 
 def get_contribution_data(new_amount_contributed, contribution_participation):
