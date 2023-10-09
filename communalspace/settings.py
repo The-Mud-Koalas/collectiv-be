@@ -9,10 +9,10 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+from .credentials_setup import firebase_admin, google_storage
 from datetime import timedelta
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
-from .credentials_setup import firebase_admin, google_storage
 import dj_database_url
 import os
 

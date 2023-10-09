@@ -114,11 +114,13 @@ def convert_tag_ids_to_tags(tag_ids):
 
 
 def filter_initiatives(list_of_events):
-    return [event for event in list_of_events if event.get_type() == EventType.INITIATIVE]
+    initiative_ids = [event.get_id() for event in list_of_events if event.get_type() == EventType.INITIATIVE]
+    return Event.objects.filter(id__in=initiative_ids)
 
 
 def filter_projects(list_of_events):
-    return [event for event in list_of_events if event.get_type() == EventType.PROJECT]
+    project_ids = [event.get_id for event in list_of_events if event.get_type() == EventType.PROJECT]
+    return Event.objects.filter(id__in=project_ids)
 
 
 def get_or_create_goal_kind(goal_kind):

@@ -1,5 +1,6 @@
 from communalspace.settings import MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY
 from django.db import models
+from django.db.models.functions import Trunc
 from event.choices import (
     EventStatus,
     AttendanceActivityType,
@@ -182,6 +183,23 @@ class Event(PolymorphicModel):
     def set_status(self, status):
         self.status = status
         self.save()
+
+    # Analytics methods
+    def get_event_registration_per_day(self):
+        return (self.eventparticipation_set
+                    .annotate(registration_date=Trunc('registration_time', 'day'))
+                    .values('registration_date')
+                    .annotate(models.Count('registration_date'))
+                    .order_by('registration_date'))
+
+    def get_event_reviews(self):
+        pass
+
+    def get_event_average_rating(self):
+        """
+        Return average rating of event
+        """
+        pass
 
 
 class Initiative(Event):
@@ -675,6 +693,25 @@ class BaseEventSerializer(serializers.ModelSerializer):
         else:
             serialized_data = ProjectSerializer(event).data
 
+        return serialized_data
+
+    class Meta:
+        model = Event
+        fields = '__all__'
+
+
+class InitiativeAnalyticsSerializer(serializers.ModelSerializer):
+    @staticmethod
+    def get_registration_history(event):
+        return [
+            {**day_data, 'registration_date': day_data['registration_date']}
+            for day_data
+            in event.get_event_registration_per_day()
+        ]
+
+    def to_representation(self, event):
+        serialized_data = BaseEventSerializer(event).data
+        serialized_data['registration_history'] = self.get_registration_history(event)
         return serialized_data
 
     class Meta:

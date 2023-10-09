@@ -77,12 +77,6 @@ def _get_active_events_based_on_coordinate(latitude, longitude):
 
 
 def _filter_events_based_on_search_parameter(events, search_parameter):
-    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.INITIATIVE:
-        events = utils.filter_initiatives(events)
-
-    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.PROJECT:
-        events = utils.filter_initiatives(events)
-
     if search_parameter.get('status') is not None:
         events = events.filter(status__iexact=search_parameter.get('status'))
 
@@ -92,6 +86,12 @@ def _filter_events_based_on_search_parameter(events, search_parameter):
     if search_parameter.get('tags') is not None:
         tag_names = search_parameter.get('tags').split(',')
         events = events.filter(tags__name__in=tag_names)
+
+    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.INITIATIVE:
+        events = utils.filter_initiatives(events)
+
+    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.PROJECT:
+        events = utils.filter_initiatives(events)
 
     return events
 
