@@ -4,6 +4,11 @@ from event.choices import EventType
 from event.exceptions import InvalidCheckInCheckOutException
 
 
+def validate_user_is_not_event_creator(event, user):
+    if event.get_creator() == user:
+        raise InvalidRequestException('Event creator cannot register/contribute through this action')
+
+
 def validate_event_is_on_going(event):
     if not event.is_ongoing():
         raise InvalidRequestException('Event has not started or has been completed')

@@ -1,5 +1,5 @@
 from event.exceptions import InvalidCheckInCheckOutException
-from .attendance_helper import (
+from .participation_helpers import (
     validate_event_is_on_going,
     validate_user_is_a_volunteer,
     validate_user_can_check_in,

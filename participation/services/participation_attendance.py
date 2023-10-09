@@ -5,7 +5,7 @@ from event.exceptions import InvalidCheckInCheckOutException
 from event.choices import ParticipationType
 from event.services import utils as event_utils
 from django.core.exceptions import ObjectDoesNotExist
-from participation.services.attendance_helper import (
+from participation.services.participation_helpers import (
     validate_event_is_on_going,
     validate_user_is_inside_event_location,
     validate_user_can_check_in,

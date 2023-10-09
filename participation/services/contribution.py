@@ -1,4 +1,9 @@
-from .attendance_helper import validate_event_is_on_going, validate_assisting_user_is_manager_of_event, handle_reward_grant
+from .participation_helpers import (
+    validate_user_is_not_event_creator,
+    validate_event_is_on_going,
+    validate_assisting_user_is_manager_of_event,
+    handle_reward_grant
+)
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils
@@ -42,6 +47,7 @@ def handle_volunteer_mark_participant_contribution(request_data, volunteer_user)
 
     contributor_id = firebase_utils.get_user_id_from_email_or_phone_number(request_data.get('contributor_email_phone'))
     contributor = user_utils.get_user_by_id_or_raise_exception(contributor_id)
+    validate_user_is_not_event_creator(project, contributor)
 
     contribution_participation = project.register_contribution(contributor, request_data.get('amount_contributed'))
     contribution_data = get_contribution_data(request_data.get('amount_contributed'), contribution_participation)
