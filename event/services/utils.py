@@ -1,5 +1,11 @@
+from ..models import (
+    Event,
+    EventCategory,
+    EventType,
+    GoalKind,
+    Tags
+)
 from django.core.exceptions import ObjectDoesNotExist
-from ..models import Event, EventCategory, Tags
 
 
 def get_tag_by_id_or_raise_exception(tag_id):
@@ -13,6 +19,15 @@ def get_tag_by_id_or_raise_exception(tag_id):
 
 def get_event_by_id_or_raise_exception(event_id):
     matching_event = Event.objects.filter(id=event_id)
+
+    if len(matching_event) > 0:
+        return matching_event[0]
+    else:
+        raise ObjectDoesNotExist(f'Event with id {event_id} does not exist')
+
+
+def get_event_by_id_or_raise_exception_thread_safe(event_id):
+    matching_event = Event.objects.filter(id=event_id).select_for_update()
 
     if len(matching_event) > 0:
         return matching_event[0]
@@ -42,6 +57,15 @@ def get_category_from_name(category_name):
     return None
 
 
+def get_category_from_id_or_raise_exception(category_id):
+    matching_category = EventCategory.objects.filter(id=category_id)
+
+    if len(matching_category) > 0:
+        return matching_category[0]
+    else:
+        raise ObjectDoesNotExist(f'Event Category with ID {category_id} does not exist')
+
+
 def convert_tag_ids_to_tags(tag_ids):
     tags = []
     for tag_id in tag_ids:
@@ -49,3 +73,16 @@ def convert_tag_ids_to_tags(tag_ids):
         tags.append(tag)
 
     return tags
+
+
+def filter_initiatives(list_of_events):
+    return [event for event in list_of_events if event.get_type() == EventType.INITIATIVE]
+
+
+def filter_projects(list_of_events):
+    return [event for event in list_of_events if event.get_type() == EventType.PROJECT]
+
+
+def get_or_create_goal_kind(goal_kind):
+    goal_kind, _ = GoalKind.objects.get_or_create(kind=goal_kind)
+    return goal_kind

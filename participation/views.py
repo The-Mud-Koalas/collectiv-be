@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -17,6 +18,7 @@ import json
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_register_user_participation_to_event(request):
     """
     This view serves as the endpoint to register user
@@ -35,6 +37,7 @@ def serve_register_user_participation_to_event(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_register_user_volunteer_to_event(request):
     """
     This view serves as the endpoint to register user
@@ -47,6 +50,24 @@ def serve_register_user_volunteer_to_event(request):
     request_data = json.loads(request.body.decode('utf-8'))
     participation.handle_register_user_volunteering_to_event(request_data, request.user)
     response_data = {'message': 'Volunteer is successfully added'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
+def serve_participant_volunteer_leave_events(request):
+    """
+    This view serves as the endpoint for participant and volunteers
+    to leave the events that they are currently participating on.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    participation.handle_participant_volunteer_leave_events(request_data, request.user)
+    response_data = {'message': 'User left event successfully'}
     return Response(data=response_data)
 
 
@@ -184,23 +205,6 @@ def serve_volunteer_mark_participant_contribution(request):
     request_data = json.loads(request.body.decode('utf-8'))
     contribution.handle_volunteer_mark_participant_contribution(request_data, request.user)
     response_data = {'message': 'Participant contribution has been added successfully'}
-    return Response(data=response_data)
-
-
-@require_POST
-@api_view(['POST'])
-@firebase_authenticated()
-def serve_participant_volunteer_leave_events(request):
-    """
-    This view serves as the endpoint for participant and volunteers
-    to leave the events that they are currently participating on.
-    ----------------------------------------------------------
-    request-body must contain:
-    event_id: UUID string
-    """
-    request_data = json.loads(request.body.decode('utf-8'))
-    participation.handle_participant_volunteer_leave_events(request_data, request.user)
-    response_data = {'message': 'User participation is deleted successfully'}
     return Response(data=response_data)
 
 

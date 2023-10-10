@@ -5,16 +5,17 @@ from communalspace.exceptions import InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils
 from django.core.exceptions import ObjectDoesNotExist
 from event.services import utils as event_utils
+from event.models import EventType
 from users.services import utils as user_utils
 
 
 def validate_event_is_project(event):
-    if event.get_type() != 'project':
+    if event.get_type() != EventType.PROJECT:
         raise InvalidRequestException(f'Event with id {event.get_id()} is not a project')
 
 
 def validate_contributor_has_not_contributed(project, contributor):
-    if project.get_contributor_by_participant(contributor) is not None:
+    if project.get_contribution_by_contributor(contributor) is not None:
         raise InvalidRequestException('Contributor has contributed to the project')
 
 

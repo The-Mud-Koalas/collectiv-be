@@ -6,12 +6,18 @@ from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import BaseEventSerializer, EventCategorySerializer, TagsSerializer
+from .models import (
+    BaseEventSerializer,
+    EventCategorySerializer,
+    GoalKindSerializer,
+    TagsSerializer
+)
 from .services import (
     category,
     create_event,
     discover_event,
     event_management,
+    goals,
     tags,
 )
 import json
@@ -34,6 +40,32 @@ def serve_create_event_category(request):
     return Response(data=response_data)
 
 
+@require_GET
+@api_view(['GET'])
+def serve_get_event_categories(request):
+    """
+    This view serves as the endpoint to get the list of all
+    registered categories.
+    ----------------------------------------------------------
+    """
+    event_categories = category.handle_get_all_event_categories()
+    response_data = EventCategorySerializer(event_categories, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_all_goal_kinds(request):
+    """
+    This view serves as the endpoint to get the list of all registered
+    goal kinds.
+    ----------------------------------------------------------
+    """
+    goal_kinds = goals.handle_get_all_goal_kinds()
+    response_data = GoalKindSerializer(goal_kinds, many=True).data
+    return Response(data=response_data)
+
+
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
@@ -45,16 +77,19 @@ def serve_create_event(request):
     request-data must contain:
     name: string
     description: string (optional)
-    is_project: boolean
-    project_goal: float (optional, required if is_project is true)
-    goal_measurement_unit: float (optional, required if is_project is true)
     min_num_of_volunteers: integer
 
     start_date_time: ISO datetime string
     end_date_time: ISO datetime string
 
+    category_id: UUID string
     location_id: UUID string
     tags: list[string] (containing the tags ID for the event)
+
+    is_project: boolean
+    project_goal: float (optional, required if is_project is true)
+    goal_measurement_unit: float (optional, required if is_project is true)
+    goal_kind: string (optional, required if is_project is true)
     """
     request_data = json.loads(request.body.decode('utf-8'))
     created_event = create_event.handle_create_event(request_data, user=request.user)
@@ -158,8 +193,36 @@ def serve_get_nearby_events(request):
     longitude: float
     """
     request_data = request.GET
-    nearby_events = discover_event.handle_get_interest_based_nearby_events(request_data, request.user)
+    nearby_events = discover_event.handle_get_interest_based_nearby_active_events(request_data, request.user)
     response_data = BaseEventSerializer(nearby_events, many=True).data
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_events_per_location(request, location_id):
+    """
+    This view serves as the endpoint to display the list of events located in a location.
+    The list of events is queryable based on the event type (event/project), status,
+    and the categories.
+    ----------------------------------------------------------
+    request-param must contain:
+    location_id: UUID string
+
+    request-param may contain:
+    type: initiative/project
+    status: scheduled, cancelled, completed, ongoing
+    category_id: UUID string
+    tags: comma separated strings (example: go-green,body-building)
+
+    limit: integer (number of results to be displayed in one fetch)
+    page: integer
+    """
+    request_data = request.GET
+    matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
+    limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
+    paginated_result = paginators.paginate_result(matching_events_of_location, limit, page_number)
+    response_data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
     return Response(data=response_data)
 
 
@@ -177,8 +240,12 @@ def serve_search_events(request):
     request-param may contain:
     latitude: float
     longitude: float
-    name: string
+
+    type: initiative/project
+    status: string
+    category_id: UUID string
     tags: comma separated strings (example: go-green,body-building)
+    location_id: UUID string
 
     limit: integer (number of results to be displayed in one fetch)
     page: integer
@@ -194,6 +261,7 @@ def serve_search_events(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_update_event_status(request):
     """
     This view serves as the endpoint to update the event status.
@@ -211,6 +279,7 @@ def serve_update_event_status(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_update_project_progress(request):
     """
     This view serves as the endpoint for project creator to update
