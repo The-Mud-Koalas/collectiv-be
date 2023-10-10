@@ -16,7 +16,6 @@ from .views import (
     serve_update_project_progress
 )
 
-
 urlpatterns = [
     path('category/create/', serve_create_event_category),
     path('category/all/', serve_get_event_categories),

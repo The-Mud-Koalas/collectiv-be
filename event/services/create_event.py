@@ -9,7 +9,7 @@ from google.api_core import exceptions as google_exceptions
 from numbers import Number
 from space.services import utils as space_utils
 from . import utils
-from ..models import Event, Project
+from ..models import Event, Project, Initiative
 
 
 def _validate_event_basic_attributes(request_data):
@@ -86,7 +86,6 @@ def _create_project(request_data, event_category, event_space, creator):
     return Project.objects.create(
         name=request_data.get('name'),
         description=request_data.get('description'),
-        min_num_of_volunteers=request_data.get('min_num_of_volunteers'),
         start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
         end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
         location=event_space,
@@ -99,10 +98,9 @@ def _create_project(request_data, event_category, event_space, creator):
 
 
 def _create_initiative(request_data, event_category, event_space, creator):
-    return Event.objects.create(
+    return Initiative.objects.create(
         name=request_data.get('name'),
         description=request_data.get('description'),
-        min_num_of_volunteers=request_data.get('min_num_of_volunteers'),
         start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
         end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
         location=event_space,

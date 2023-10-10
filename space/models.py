@@ -1,3 +1,4 @@
+from communalspace.settings import AREA_RADIUS, AREA_BUFFER_RADIUS
 from django.db import models
 from rest_framework import serializers
 from space.services.haversine import haversine
@@ -16,7 +17,7 @@ class Location(models.Model):
     def get_all_events_of_space(self):
         return self.event_set.all().order_by('start_date_time')
 
-    def coordinate_is_inside_location(self, latitude, longitude, tolerance=0.1):
+    def coordinate_is_inside_location(self, latitude, longitude):
         distance_from_location = haversine(
             self.latitude,
             self.longitude,
@@ -24,7 +25,17 @@ class Location(models.Model):
             longitude
         )
 
-        return distance_from_location <= tolerance
+        return distance_from_location <= AREA_RADIUS
+
+    def coordinate_is_near_location(self, latitude, longitude):
+        distance_from_location = haversine(
+            self.latitude,
+            self.longitude,
+            latitude,
+            longitude
+        )
+
+        return distance_from_location <= AREA_BUFFER_RADIUS
 
 
 class LocationSerializer(serializers.ModelSerializer):

@@ -9,10 +9,10 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+from .credentials_setup import firebase_admin, google_storage
 from datetime import timedelta
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
-from .credentials_setup import firebase_admin, google_storage
 import dj_database_url
 import os
 
@@ -157,3 +157,11 @@ GOOGLE_STORAGE_BUCKET_NAME = 'artifacts.mud-koalas-communal-space.appspot.com'
 
 # Pagination Settings
 DEFAULT_PAGE_LIMIT = 10
+
+# Geofencing setting (in KM)
+AREA_RADIUS = 0.1
+AREA_BUFFER_RADIUS = 0.3
+
+# Reward Settings
+MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY = 0
+POINTS_PER_ATTENDANCE = 1

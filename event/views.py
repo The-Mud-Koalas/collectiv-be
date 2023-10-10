@@ -296,5 +296,3 @@ def serve_update_project_progress(request):
     return Response(data=response_data)
 
 
-
-
