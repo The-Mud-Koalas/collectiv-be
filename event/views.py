@@ -221,8 +221,12 @@ def serve_get_events_per_location(request, location_id):
     request_data = request.GET
     matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
     limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
-    paginated_result = paginators.paginate_result(matching_events_of_location, limit, page_number)
-    response_data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
+    paginated_result, total_page_number = paginators.paginate_result(matching_events_of_location, limit, page_number)
+    response_data = PaginatorSerializer(
+        paginated_result,
+        BaseEventSerializer,
+        total_page_number
+    ).data
     return Response(data=response_data)
 
 
@@ -253,8 +257,12 @@ def serve_search_events(request):
     request_data = request.GET
     events = discover_event.handle_search_events(request_data)
     limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
-    paginated_result = paginators.paginate_result(events, limit, page_number)
-    data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
+    paginated_result, total_page_number = paginators.paginate_result(events, limit, page_number)
+    data = PaginatorSerializer(
+        paginated_result,
+        BaseEventSerializer,
+        total_page_number
+    ).data
     return Response(data=data)
 
 
