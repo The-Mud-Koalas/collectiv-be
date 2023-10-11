@@ -2,7 +2,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from firebase_admin import auth, exceptions as firebase_exceptions
 
 
-
 def get_user_id_from_email(email):
     try:
         return auth.get_user_by_email(email).uid
@@ -25,5 +24,12 @@ def get_user_id_from_email_or_phone_number(email_or_phone_number):
 
     else:
         return get_user_id_from_phone_number(email_or_phone_number)
+
+
+def get_email_or_phone_number_from_id(user_id):
+    firebase_user = auth.get_user(user_id)
+    return firebase_user.email if firebase_user.email is not None else firebase_user.phone_number
+
+
 
 

@@ -6,6 +6,8 @@ from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
 
+from .firebase_admin import firebase as firebase_utils
+
 
 def get_id_token_from_authorization_header(authorization_header):
     try:
@@ -108,3 +110,12 @@ def parse_limit_page(limit, page):
         page = 1
 
     return limit, page
+
+
+def convert_user_id_to_email_or_phone_number(user_id_data):
+    return [
+        {
+            **user_id_datum,
+            'email_or_phone': firebase_utils.get_email_or_phone_number_from_id(user_id_datum.get('user_id'))
+        } for user_id_datum in user_id_data
+    ]

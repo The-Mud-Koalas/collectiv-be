@@ -2,7 +2,9 @@ from . import utils
 from ..choices import EventStatus, TransactionType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
+from communalspace.utils import convert_user_id_to_email_or_phone_number
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
 from participation.services.contribution import validate_event_is_project
 import numbers
 
@@ -83,7 +85,16 @@ def handle_update_project_progress(request_data, user):
     )
 
 
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_event_volunteers(request_data, user):
+    event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    _validate_event_ownership(event, user)
+    volunteers = (event.get_all_volunteers()
+                  .annotate(
+                        user_id=models.F('participant'),
+                        volunteer_name=models.F('participant__full_name'),
+                        has_manager_access=models.F('granted_manager_access'))
+                  .values('user_id', 'volunteer_name', 'has_manager_access'))
 
-
-
+    return convert_user_id_to_email_or_phone_number(volunteers)
 
