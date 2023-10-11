@@ -89,3 +89,23 @@ def serve_get_user_current_event(request):
     response_data = user.handle_get_user_current_event(request.user)
     return Response(data=response_data)
 
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+def serve_update_user_prompted_location_tracking(request):
+    """
+    This view serves as the endpoint to update whether the user
+    has been prompted for location tracking.
+    ----------------------------------------------------------
+    request-param must contain:
+    has_been_prompted: Boolean
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    user.handle_update_user_prompted_location_tracking(request_data, request.user)
+    response_data = {'message': 'User location tracking prompt status is successfully updated'}
+    return Response(data=response_data)
+
+
+
+
