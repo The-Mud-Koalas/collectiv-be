@@ -27,12 +27,6 @@ def _validate_event_basic_attributes(request_data):
 
 
 def _validate_event_updatable_attributes(request_data):
-    if not isinstance(request_data.get('min_num_of_volunteers'), int):
-        raise InvalidRequestException('Minimum number of volunteers must be an integer')
-
-    if request_data.get('min_num_of_volunteers') < 0:
-        raise InvalidRequestException('Minimum number of volunteers must be a non negative number')
-
     if not app_utils.is_valid_iso_date_string(request_data.get('start_date_time')):
         raise InvalidRequestException('Start date time must be a valid ISO datetime string')
 
