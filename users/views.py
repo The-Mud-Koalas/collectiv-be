@@ -76,3 +76,16 @@ def serve_subscribe_to_tags(request):
     response_data = {'message': 'User interest is successfully updated'}
     return Response(data=response_data)
 
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_current_event(request):
+    """
+    This view serves as the endpoint to get user's current
+    attended event.
+    ----------------------------------------------------------
+    """
+    response_data = user.handle_get_user_current_event(request.user)
+    return Response(data=response_data)
+

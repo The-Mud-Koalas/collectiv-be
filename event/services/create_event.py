@@ -9,11 +9,10 @@ from google.api_core import exceptions as google_exceptions
 from numbers import Number
 from space.services import utils as space_utils
 from . import utils
-from .utils import convert_tag_ids_to_tags
-from ..models import Event, Project
+from ..models import Event, Project, Initiative
 
 
-def validate_create_event_request(request_data):
+def _validate_event_basic_attributes(request_data):
     if not isinstance(request_data.get('name'), str):
         raise InvalidRequestException('Event name must be a string')
 
@@ -26,24 +25,8 @@ def validate_create_event_request(request_data):
     if not isinstance(request_data.get('is_project'), bool):
         raise InvalidRequestException('Is Project must be boolean')
 
-    if request_data.get('is_project') and request_data.get('project_goal') is None:
-        raise InvalidRequestException('Project Goal must exist in a project')
 
-    if request_data.get('project_goal') is not None and not isinstance(request_data.get('project_goal'), Number):
-        raise InvalidRequestException('Project Goal must be a number')
-
-    if request_data.get('is_project') and not request_data.get('goal_measurement_unit'):
-        raise InvalidRequestException('Goal measurement unit must exist in a project')
-
-    if not isinstance(request_data.get('goal_measurement_unit'), str):
-        raise InvalidRequestException('Goal measurement unit must be a string')
-
-    if not isinstance(request_data.get('min_num_of_volunteers'), int):
-        raise InvalidRequestException('Minimum number of volunteers must be an integer')
-
-    if request_data.get('min_num_of_volunteers') < 0:
-        raise InvalidRequestException('Minimum number of volunteers must be a non negative number')
-
+def _validate_event_updatable_attributes(request_data):
     if not app_utils.is_valid_iso_date_string(request_data.get('start_date_time')):
         raise InvalidRequestException('Start date time must be a valid ISO datetime string')
 
@@ -57,9 +40,6 @@ def validate_create_event_request(request_data):
             app_utils.get_date_from_date_time_string(request_data.get('end_date_time'))):
         raise InvalidRequestException('Start time must not occur after the end time')
 
-    if not app_utils.is_valid_uuid_string(request_data.get('location_id')):
-        raise InvalidRequestException('Location ID must be a valid UUID string')
-
     if not isinstance(request_data.get('tags'), list):
         raise InvalidRequestException('Tags must be a list')
 
@@ -68,32 +48,76 @@ def validate_create_event_request(request_data):
             raise InvalidRequestException('Tag ID must be a valid UUID string')
 
 
-def _create_event(request_data, event_space, event_tags, creator) -> Event:
+def _validate_additional_project_attributes(request_data):
+    if not request_data.get('project_goal'):
+        raise InvalidRequestException('Project Goal must exist in a project')
+
+    if not isinstance(request_data.get('project_goal'), Number):
+        raise InvalidRequestException('Project Goal must be a number')
+
+    if not request_data.get('goal_kind'):
+        raise InvalidRequestException('Goal kind must exist in a project')
+
+    if not isinstance(request_data.get('goal_kind'), str):
+        raise InvalidRequestException('Goal kind must be a string')
+
+    if not request_data.get('goal_measurement_unit'):
+        raise InvalidRequestException('Goal measurement unit must exist in a project')
+
+    if not isinstance(request_data.get('goal_measurement_unit'), str):
+        raise InvalidRequestException('Goal measurement unit must be a string')
+
+
+def validate_create_event_request(request_data):
+    _validate_event_basic_attributes(request_data)
+    _validate_event_updatable_attributes(request_data)
+
+    if request_data.get('is_project'):
+        _validate_additional_project_attributes(request_data)
+
+
+def _create_project(request_data, event_category, event_space, creator):
+    return Project.objects.create(
+        name=request_data.get('name'),
+        description=request_data.get('description'),
+        start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
+        end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
+        location=event_space,
+        creator=creator,
+        category=event_category,
+        goal=request_data.get('project_goal'),
+        measurement_unit=request_data.get('goal_measurement_unit'),
+        goal_kind=utils.get_or_create_goal_kind(request_data.get('goal_kind').lower())
+    )
+
+
+def _create_initiative(request_data, event_category, event_space, creator):
+    return Initiative.objects.create(
+        name=request_data.get('name'),
+        description=request_data.get('description'),
+        start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
+        end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
+        location=event_space,
+        creator=creator,
+        category=event_category,
+    )
+
+
+def _create_event(request_data, event_category, event_space, event_tags, creator) -> Event:
     event_is_project = request_data.get('is_project')
-
     if event_is_project:
-        print(request_data.get('name'))
-        new_event = Project.objects.create(
-            name=request_data.get('name'),
-            description=request_data.get('description'),
-            min_num_of_volunteers=request_data.get('min_num_of_volunteers'),
-            start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
-            end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
-            location=event_space,
-            creator=creator,
-            goal=request_data.get('project_goal'),
-            measurement_unit=request_data.get('goal_measurement_unit')
+        new_event = _create_project(
+            request_data,
+            event_category,
+            event_space,
+            creator
         )
-
     else:
-        new_event = Event.objects.create(
-            name=request_data.get('name'),
-            description=request_data.get('description'),
-            min_num_of_volunteers=request_data.get('min_num_of_volunteers'),
-            start_date_time=app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
-            end_date_time=app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
-            location=event_space,
-            creator=creator
+        new_event = _create_initiative(
+            request_data,
+            event_category,
+            event_space,
+            creator
         )
 
     for tag in event_tags:
@@ -106,9 +130,17 @@ def _create_event(request_data, event_space, event_tags, creator) -> Event:
 def handle_create_event(request_data, user):
     validate_create_event_request(request_data)
     request_data = app_utils.trim_all_request_attributes(request_data)
+    event_category = utils.get_category_from_id_or_raise_exception(request_data.get('category_id'))
     event_space = space_utils.get_space_by_id_or_raise_exception(request_data.get('location_id'))
-    event_tags = convert_tag_ids_to_tags(request_data.get('tags'))
-    created_event = _create_event(request_data, event_space=event_space, event_tags=event_tags, creator=user)
+    event_tags = utils.convert_tag_ids_to_tags(request_data.get('tags'))
+    created_event = _create_event(
+        request_data,
+        event_category=event_category,
+        event_space=event_space,
+        event_tags=event_tags,
+        creator=user
+    )
+
     return created_event
 
 
@@ -116,7 +148,7 @@ def _delete_event_image(event):
     try:
         google_storage.delete_file_from_google_bucket(event.get_event_image_directory(), GOOGLE_STORAGE_BUCKET_NAME)
 
-    except google_exceptions.NotFound as exc:
+    except google_exceptions.NotFound:
         pass
 
 

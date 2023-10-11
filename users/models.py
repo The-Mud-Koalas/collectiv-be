@@ -22,6 +22,9 @@ class User(AbstractUser):
     notified_locations = models.ManyToManyField('space.Location', through='users.NotifiedLocation')
     interests = models.ManyToManyField('event.Tags')
 
+    event_currently_attended = models.ForeignKey('event.Event', on_delete=models.SET_NULL, default=None, null=True)
+    currently_attending_role = models.CharField(max_length=15, default=None, null=True)
+
     USERNAME_FIELD = 'user_id'
 
     objects = UserManager()
@@ -31,6 +34,34 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.user_id
+
+    def get_currently_attended_event(self):
+        return self.event_currently_attended
+
+    def get_currently_attended_event_id(self):
+        return self.event_currently_attended.get_id()
+
+    def get_currently_attending_role(self):
+        return self.currently_attending_role
+
+    def is_currently_attending_event(self):
+        return self.currently_attending_role is not None
+
+    def set_currently_attended_event(self, event):
+        self.event_currently_attended = event
+        self.save()
+
+    def set_currently_attending_role(self, role):
+        self.currently_attending_role = role
+        self.save()
+
+    def remove_currently_attended_event(self):
+        self.set_currently_attended_event(None)
+        self.set_currently_attending_role(None)
+
+    def add_reward(self, amount):
+        self.reward_points += amount
+        self.save()
 
     def set_full_name(self, full_name):
         self.full_name = full_name

@@ -1,15 +1,15 @@
-import space.services.haversine
+from . import utils
+from ..models import Event
+from ..choices import EventType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
 from django.core.exceptions import ObjectDoesNotExist
-from datetime import datetime, timezone
 from space.models import Location
 from space.services import utils as space_utils
-from typing import List
 from users.models import User
-from . import utils
-from ..models import Event, Tags
+
+import space.services.haversine
 import mimetypes
 
 
@@ -36,28 +36,15 @@ def handle_get_event_image_by_id(event_id):
 
 
 def _get_active_events_of_spaces(spaces):
-    events_of_spaces = []
-    for space in spaces:
-        events_of_spaces.extend(space.get_active_events_of_space())
+    events_of_spaces = Event.objects.none()
+    for space_ in spaces:
+        events_of_spaces = events_of_spaces | space_.get_active_events_of_space()
 
     return events_of_spaces
 
 
-def _filter_events_matching_tags(events: List[Event], tags: List[Tags]):
-    return [
-        event
-        for event in events
-        if event.get_tags() & tags
-    ]
-
-
-def _get_events_matching_user_interest(events, user):
-    user_interests = user.get_interests()
-    return _filter_events_matching_tags(events, user_interests)
-
-
 @catch_exception_and_convert_to_invalid_request_decorator((ValueError,))
-def handle_get_interest_based_nearby_events(request_data, user: User):
+def handle_get_interest_based_nearby_active_events(request_data, user: User):
     subscribed_locations = user.get_subscribed_locations()
     latitude, longitude = space_utils.parse_coordinate(request_data)
     nearby_spaces = space_utils.get_nearby_locations(
@@ -67,10 +54,10 @@ def handle_get_interest_based_nearby_events(request_data, user: User):
         user.get_preferred_radius()
     )
     nearby_events = _get_active_events_of_spaces(nearby_spaces)
-    return _get_events_matching_user_interest(nearby_events, user)
+    return nearby_events.filter(tags__in=user.get_interests())
 
 
-def _get_events_based_on_location(latitude, longitude):
+def _get_active_events_based_on_coordinate(latitude, longitude):
     if latitude is not None and longitude is not None:
         all_locations = Location.objects.all()
         sorted_locations = sorted(
@@ -84,26 +71,51 @@ def _get_events_based_on_location(latitude, longitude):
         events = _get_active_events_of_spaces(sorted_locations)
 
     else:
-        events = (Event.objects.filter(end_date_time__gte=datetime.now(tz=timezone.utc)).order_by('start_date_time'))
+        events = Event.objects.filter_active().order_by('start_date_time')
 
     return events
 
 
-@catch_exception_and_convert_to_invalid_request_decorator((ValueError,))
-def handle_search_events(request_data):
+def _filter_events_based_on_search_parameter(events, search_parameter):
+    if search_parameter.get('status') is not None:
+        events = events.filter(status__iexact=search_parameter.get('status'))
+
+    if search_parameter.get('category_id') is not None:
+        events = events.filter(category__id=search_parameter.get('category_id'))
+
+    if search_parameter.get('tags') is not None:
+        tag_names = search_parameter.get('tags').split(',')
+        events = events.filter(tags__name__in=tag_names)
+
+    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.INITIATIVE:
+        events = utils.filter_initiatives(events)
+
+    if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.PROJECT:
+        events = utils.filter_initiatives(events)
+
+    return events
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_events_per_location(location_id, request_data):
+    location = space_utils.get_space_by_id_or_raise_exception(location_id)
+    events_of_space = location.get_all_events_of_space()
+    return _filter_events_based_on_search_parameter(events_of_space, request_data)
+
+
+def handle_search_events_location_wide(request_data):
     latitude, longitude = space_utils.parse_coordinate_fail_silently(request_data)
-    events = _get_events_based_on_location(latitude, longitude)
+    events = _get_active_events_based_on_coordinate(latitude, longitude)
+    return _filter_events_based_on_search_parameter(events, request_data)
 
-    if request_data.get('name') is not None:
-        events = events.filter(name__icontains=request_data.get('name'))
 
-    if request_data.get('tags') is not None:
-        tag_names = request_data.get('tags').split(',')
-        tag_names = [tag_name.lower() for tag_name in tag_names]
-        tags = utils.convert_tag_names_to_tag(tag_names)
-        events = _filter_events_matching_tags(events, tags)
+def handle_search_events(request_data):
+    if request_data.get('location_id') is not None:
+        return handle_get_events_per_location(request_data.get('location_id'), request_data)
 
-    return events
+    else:
+        return handle_search_events_location_wide(request_data)
+
 
 
 

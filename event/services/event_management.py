@@ -1,11 +1,12 @@
-import numbers
-
 from . import utils
-from ..models import EventStatus
+from ..choices import EventStatus, TransactionType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
+from communalspace.utils import convert_user_id_to_email_or_phone_number
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
 from participation.services.contribution import validate_event_is_project
+import numbers
 
 
 def _validate_event_ownership(event, user):
@@ -26,6 +27,10 @@ def _validate_update_status_transition(event, new_status):
 
 
 def _handle_send_cancellation_notification(event):
+    """
+    This function is responsible for sending the cancellation notification
+    to the volunteers and participants registered to the event.
+    """
     pass
 
 
@@ -42,7 +47,7 @@ def update_event_status(event, new_status):
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_update_event_status(request_data, user):
-    event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    event = utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
     _validate_event_ownership(event, user)
     _validate_update_status_transition(event, request_data.get('new_status'))
     update_event_status(event, request_data.get('new_status'))
@@ -60,7 +65,7 @@ def _validate_update_project_progress_request(request_data):
 
 
 def _update_project_progress(event, amount_to_update, update_type):
-    if update_type == 'increase':
+    if update_type == TransactionType.INCREASE:
         event.increase_progress(amount_to_update)
 
     else:
@@ -69,9 +74,9 @@ def _update_project_progress(event, amount_to_update, update_type):
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist, ValueError))
 def handle_update_project_progress(request_data, user):
-    event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    _validate_event_ownership(event, user)
+    event = utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
     validate_event_is_project(event)
+    _validate_event_ownership(event, user)
     _validate_update_project_progress_request(request_data)
     _update_project_progress(
         event,
@@ -80,7 +85,16 @@ def handle_update_project_progress(request_data, user):
     )
 
 
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_event_volunteers(request_data, user):
+    event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    _validate_event_ownership(event, user)
+    volunteers = (event.get_all_volunteers()
+                  .annotate(
+                        user_id=models.F('participant'),
+                        volunteer_name=models.F('participant__full_name'),
+                        has_manager_access=models.F('granted_manager_access'))
+                  .values('user_id', 'volunteer_name', 'has_manager_access'))
 
-
-
+    return convert_user_id_to_email_or_phone_number(volunteers)
 
