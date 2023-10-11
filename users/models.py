@@ -24,6 +24,7 @@ class User(AbstractUser):
 
     event_currently_attended = models.ForeignKey('event.Event', on_delete=models.SET_NULL, default=None, null=True)
     currently_attending_role = models.CharField(max_length=15, default=None, null=True)
+    initial_location_track_prompt = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'user_id'
 
@@ -34,6 +35,13 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.user_id
+
+    def has_been_prompted_for_location_tracking(self):
+        return self.initial_location_track_prompt
+
+    def set_has_been_prompted_for_location_tracking(self, has_been_prompted):
+        self.has_been_prompted = has_been_prompted
+        self.save()
 
     def get_currently_attended_event(self):
         return self.event_currently_attended
@@ -113,6 +121,13 @@ class User(AbstractUser):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    has_been_prompted_for_location_tracking = serializers.SerializerMethodField(
+        method_name='get_has_been_prompted_for_location_tracking'
+    )
+
+    def get_has_been_prompted_for_location_tracking(self, instance):
+        return instance.has_been_prompted_for_location_tracking()
+
     class Meta:
         model = User
         fields = [
@@ -120,7 +135,8 @@ class UserSerializer(serializers.ModelSerializer):
             'full_name',
             'reward_points',
             'preferred_radius',
-            'location_track'
+            'location_track',
+            'has_been_prompted_for_location_tracking',
         ]
 
 
