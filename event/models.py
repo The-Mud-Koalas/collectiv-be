@@ -496,6 +496,9 @@ class VolunteerParticipation(AttendableEventParticipation):
     def get_participation_type(self):
         return ParticipationType.VOLUNTEER
 
+    def has_manager_access(self):
+        return self.granted_manager_access
+
     def can_act_as_manager(self):
         return self.granted_manager_access and self.get_is_currently_attending()
 
@@ -583,7 +586,7 @@ class EventParticipationSerializer(serializers.ModelSerializer):
         ]
 
 
-class AttendableEventParticipationSerializer(serializers.ModelSerializer):
+class BaseAttendableEventParticipationSerializer(serializers.ModelSerializer):
     activities = serializers.SerializerMethodField(method_name='get_activity_data')
 
     def get_activity_data(self, instance):
@@ -597,6 +600,20 @@ class AttendableEventParticipationSerializer(serializers.ModelSerializer):
             'has_attended',
             'activities',
         ]
+
+
+class AttendableEventParticipationSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        base_participation_data = BaseAttendableEventParticipationSerializer(instance).data
+        if isinstance(instance, VolunteerParticipation):
+            base_participation_data['granted_manager_access'] = instance.has_manager_access()
+            base_participation_data['can_act_as_manager'] = instance.can_act_as_manager()
+
+        return base_participation_data
+
+    class Meta:
+        model = AttendableEventParticipation
+        fields = '__all__'
 
 
 class BaseEventParticipationSerializer(serializers.ModelSerializer):
