@@ -85,10 +85,17 @@ def handle_update_project_progress(request_data, user):
     )
 
 
+def _validate_user_is_manager_of_event(event, user):
+    if not event.check_user_can_act_as_manager(user):
+        raise RestrictedAccessException(
+            'User has not been granted manager access or is currently not checked in'
+        )
+
+
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_get_event_volunteers(request_data, user):
     event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    _validate_event_ownership(event, user)
+    _validate_user_is_manager_of_event(event, user)
     volunteers = (event.get_all_volunteers()
                   .annotate(
                         user_id=models.F('participant'),

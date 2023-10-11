@@ -33,5 +33,5 @@ urlpatterns = [
     path('status/update/', serve_update_event_status),
     path('tags/', serve_get_all_tags),
     path('tags/get-or-create/multiple/', serve_get_or_create_tags),
-    path('creator/volunteers/', serve_get_event_volunteers),
+    path('managers/volunteers/', serve_get_event_volunteers),
 ]
