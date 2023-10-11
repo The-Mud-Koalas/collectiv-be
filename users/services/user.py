@@ -54,3 +54,15 @@ def handle_subscribe_to_tags(request_data, user):
     _validate_subscribe_to_tags_request(request_data)
     interests = event_utils.convert_tag_ids_to_tags(request_data.get('tags'))
     user.set_interests(interests)
+
+
+def handle_get_user_current_event(user):
+    base_data = {'is_currently_attending_event': user.is_currently_attending_event()}
+
+    if base_data.get('is_currently_attending_event'):
+        base_data['data'] = {
+            'current_attended_event_id': user.get_currently_attended_event_id(),
+            'current_attended_event_role': user.get_currently_attending_role(),
+        }
+
+    return base_data

@@ -38,6 +38,9 @@ class User(AbstractUser):
     def get_currently_attended_event(self):
         return self.event_currently_attended
 
+    def get_currently_attended_event_id(self):
+        return self.event_currently_attended.get_id()
+
     def get_currently_attending_role(self):
         return self.currently_attending_role
 
