@@ -2,6 +2,7 @@ from communalspace import paginators
 from communalspace import utils as app_utils
 from communalspace.decorators import firebase_authenticated
 from communalspace.serializers import PaginatorSerializer
+from communalspace.firebase_admin import firebase as firebase_utils
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
@@ -304,3 +305,15 @@ def serve_update_project_progress(request):
     return Response(data=response_data)
 
 
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_event_volunteers(request):
+    """
+    This view serves as the endpoint to get the list of volunteers to an event.
+    ----------------------------------------------------------
+    request-param must contain:
+    event_id: UUID string
+    """
+    response_data = event_management.handle_get_event_volunteers(request.GET, request.user)
+    return Response(data=response_data)
