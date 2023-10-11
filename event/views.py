@@ -91,6 +91,9 @@ def serve_create_event(request):
     project_goal: float (optional, required if is_project is true)
     goal_measurement_unit: float (optional, required if is_project is true)
     goal_kind: string (optional, required if is_project is true)
+
+    volunteer_registration_enabled: Boolean (default is True)
+    participation_registration_enabled: Boolean (default is True, only applicable to initiative)
     """
     request_data = json.loads(request.body.decode('utf-8'))
     created_event = create_event.handle_create_event(request_data, user=request.user)

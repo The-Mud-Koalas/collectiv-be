@@ -66,3 +66,13 @@ def handle_get_user_current_event(user):
         }
 
     return base_data
+
+
+def _validate_user_prompted_location_tracking_request(request_data):
+    if not isinstance(request_data.get('has_been_prompted'), bool):
+        raise InvalidRequestException('Has been prompted value must be a boolean')
+
+
+def handle_update_user_prompted_location_tracking(request_data, user):
+    _validate_user_prompted_location_tracking_request(request_data)
+    user.set_has_been_prompted_for_location_tracking(request_data.get('has_been_prompted'))
