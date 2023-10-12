@@ -1,4 +1,3 @@
-from event.exceptions import InvalidCheckInCheckOutException
 from .attendance_helper import (
     validate_event_is_on_going,
     validate_user_is_a_volunteer,
@@ -11,8 +10,15 @@ from .attendance_helper import (
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.firebase_admin import firebase as firebase_utils
 from django.core.exceptions import ObjectDoesNotExist
+from event.choices import ParticipationType
+from event.exceptions import InvalidCheckInCheckOutException
 from event.services import utils as event_utils
 from users.services import utils as user_utils
+
+
+def _validate_user_is_a_volunteer(participation):
+    if participation is None or participation.get_participation_type() != ParticipationType.VOLUNTEER:
+        raise InvalidCheckInCheckOutException('User is not a volunteer of event')
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((
@@ -29,7 +35,9 @@ def handle_volunteer_assisted_check_in(request_data, assisting_user):
     )
 
     checking_in_user = user_utils.get_user_by_id_or_raise_exception(checking_in_user_id)
+
     volunteer_participation = event.get_volunteer_participation_by_participant(checking_in_user)
+    _validate_user_is_a_volunteer(volunteer_participation)
     validate_user_can_check_in(checking_in_user, volunteer_participation)
     return check_in_user(checking_in_user, event, volunteer_participation)
 
