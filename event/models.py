@@ -157,11 +157,17 @@ class Event(PolymorphicModel):
     def get_location(self):
         return self.location
 
+    def get_location_name(self):
+        return self.location.get_name()
+
     def get_creator(self):
         return self.creator
 
     def get_creator_id(self):
-        return self.get_creator().get_user_id()
+        return self.creator.get_user_id()
+
+    def get_creator_name(self):
+        return self.creator.get_full_name()
 
     def get_category(self):
         return self.category
@@ -186,12 +192,18 @@ class Event(PolymorphicModel):
     def get_all_volunteers(self):
         return self.volunteerparticipation_set.all()
 
-    def get_all_type_participations(self):
+    def get_all_type_participants(self):
         return EventParticipation.objects.filter_by_event(event=self)
+
+    def get_all_type_participants_user_id_name_pair(self):
+        return self.get_all_type_participants().values(
+            user_id=models.F('participant__user_id'),
+            full_name=models.F('participant__full_name')
+        )
 
     def get_reviews(self):
         reviews = ParticipationReview.objects.none()
-        for participation in self.get_all_type_participations():
+        for participation in self.get_all_type_participants():
             reviews = reviews | participation.get_reviews()
 
         return reviews
@@ -252,7 +264,7 @@ class Event(PolymorphicModel):
         return self.current_num_of_participants
 
     def get_event_registration_per_day(self):
-        return (self.get_all_type_participations()
+        return (self.get_all_type_participants()
                 .annotate(registration_date=Trunc('registration_time', 'day'))
                 .values('registration_date')
                 .annotate(count=models.Count('registration_date'))
@@ -826,5 +838,3 @@ class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = '__all__'
-
-

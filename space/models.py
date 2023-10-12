@@ -11,6 +11,9 @@ class Location(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
 
+    def get_name(self):
+        return self.name
+
     def get_active_events_of_space(self):
         return self.event_set.filter_active().order_by('start_date_time')
 

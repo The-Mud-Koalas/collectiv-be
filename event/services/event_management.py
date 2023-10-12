@@ -1,7 +1,8 @@
-from . import utils
+from . import utils, cancellation_email
 from ..choices import EventStatus, TransactionType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
+from communalspace.firebase_admin import firebase as firebase_utils
 from communalspace.utils import convert_user_id_to_email_or_phone_number
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -25,13 +26,23 @@ def _validate_update_status_transition(event, new_status):
     if event.get_status() == EventStatus.COMPLETED.value:
         raise InvalidRequestException('Completed event can no longer be updated')
 
+    if event.get_status() == EventStatus.CANCELLED.value:
+        raise InvalidRequestException('Cancelled event can no longer be updated')
+
 
 def _handle_send_cancellation_notification(event):
     """
     This function is responsible for sending the cancellation notification
     to the volunteers and participants registered to the event.
     """
-    pass
+    event_participants_id_name_pair = event.get_all_type_participants_user_id_name_pair()
+    event_participants_user_data_with_email = firebase_utils.embed_emails_to_user_data(event_participants_id_name_pair)
+    event_participants_user_data_with_email = [
+        user_data
+        for user_data in event_participants_user_data_with_email
+        if user_data.get('email') is not None
+    ]
+    cancellation_email.send_cancellation_email(event, event_participants_user_data_with_email)
 
 
 def update_event_status(event, new_status):

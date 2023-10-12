@@ -31,5 +31,14 @@ def get_email_or_phone_number_from_id(user_id):
     return firebase_user.email if firebase_user.email is not None else firebase_user.phone_number
 
 
+def get_email_from_id(user_id):
+    firebase_user = auth.get_user(user_id)
+    return firebase_user.email
 
+
+def embed_emails_to_user_data(user_data):
+    for user_datum in user_data:
+        user_datum['email'] = get_email_from_id(user_datum.get('user_id'))
+
+    return user_data
 
