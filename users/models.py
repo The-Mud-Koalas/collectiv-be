@@ -119,6 +119,9 @@ class User(AbstractUser):
         for interest in interests:
             self.interests.add(interest)
 
+    def get_full_name(self):
+        return self.full_name
+
 
 class UserSerializer(serializers.ModelSerializer):
     has_been_prompted_for_location_tracking = serializers.SerializerMethodField(
