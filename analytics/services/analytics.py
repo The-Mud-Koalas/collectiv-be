@@ -50,3 +50,57 @@ def handle_get_total_participants_of_events_in_location(location_id):
         }
     }
 
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_progresses_of_projects_in_location(location_id):
+    location = space_utils.get_space_by_id_or_raise_exception(location_id)
+    projects_in_location = Project.objects.filter(location=location)
+
+    return {
+        'location_id': location_id,
+        'contribution_data': (projects_in_location.values('measurement_unit', 'goal_kind')
+                              .order_by('measurement_unit', 'goal_kind')
+                              .annotate(total_contribution=models.Sum('progress')))
+    }
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_ratings_of_all_events_in_location(location_id):
+    location = space_utils.get_space_by_id_or_raise_exception(location_id)
+    events_in_location = Event.objects.filter(location=location)
+
+    return {
+        'location_id': location_id,
+        'average_rating': (events_in_location.filter(~models.Q(average_event_rating=0))
+                           .aggregate(average_rating=models.Avg('average_event_rating'))
+                           .get('average_rating'))
+    }
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_sentiment_of_all_events_in_location(location_id):
+    location = space_utils.get_space_by_id_or_raise_exception(location_id)
+    events_in_location = Event.objects.filter(location=location)
+
+    return {
+        'location_id': location_id,
+        'average_sentiment_score': (events_in_location.filter(~models.Q(average_event_rating=0))
+                                    .aggregate(average_sentiment_score=models.Avg('average_sentiment_score'))
+                                    .get('average_sentiment_score'))
+    }
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_get_location_event_count(location_id):
+    location = space_utils.get_space_by_id_or_raise_exception(location_id)
+    num_of_initiatives_in_location = Initiative.objects.filter(location=location).count()
+    num_of_projects_in_location = Project.objects.filter(location=location).count()
+
+    return {
+        'location_id': location_id,
+        'event_count_data': {
+            'num_of_events_in_location': num_of_initiatives_in_location + num_of_projects_in_location,
+            'num_of_initiatives_in_location': num_of_initiatives_in_location,
+            'num_of_projects_in_location': num_of_projects_in_location,
+        }
+    }
