@@ -9,7 +9,7 @@ from participation.services.contribution import validate_event_is_project
 import numbers
 
 
-def _validate_event_ownership(event, user):
+def validate_event_ownership(event, user):
     if event.get_creator() != user:
         raise RestrictedAccessException(f'User {user.get_user_id()} is not the owner of event {event.get_id()}')
 
@@ -48,7 +48,7 @@ def update_event_status(event, new_status):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_update_event_status(request_data, user):
     event = utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
-    _validate_event_ownership(event, user)
+    validate_event_ownership(event, user)
     _validate_update_status_transition(event, request_data.get('new_status'))
     update_event_status(event, request_data.get('new_status'))
 
@@ -76,7 +76,7 @@ def _update_project_progress(event, amount_to_update, update_type):
 def handle_update_project_progress(request_data, user):
     event = utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
     validate_event_is_project(event)
-    _validate_event_ownership(event, user)
+    validate_event_ownership(event, user)
     _validate_update_project_progress_request(request_data)
     _update_project_progress(
         event,

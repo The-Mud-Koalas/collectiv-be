@@ -258,6 +258,24 @@ def serve_volunteer_grant_managerial_role(request):
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+def serve_volunteer_revoke_managerial_role(request):
+    """
+    This view serves as the endpoint for event creator to revoke volunteers
+    manager access.
+    ----------------------------------------------------------
+    request-body must contain:
+    event_id: UUID string
+    volunteer_email_phone: string
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    volunteer_attendance.handle_revoke_volunteer_managerial_role(request_data, request.user)
+    response_data = {'message': 'Volunteer manager role has been successfully revoked'}
+    return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
 @transaction.atomic()
 def serve_volunteer_mark_participant_contribution(request):
     """

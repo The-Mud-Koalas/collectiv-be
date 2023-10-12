@@ -8,10 +8,12 @@ from .attendance_helper import (
     check_out_user,
 )
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
+from communalspace.exceptions import InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils
 from django.core.exceptions import ObjectDoesNotExist
 from event.choices import ParticipationType
 from event.exceptions import InvalidCheckInCheckOutException
+from event.services.event_management import validate_event_ownership
 from event.services import utils as event_utils
 from users.services import utils as user_utils
 
@@ -69,7 +71,24 @@ def handle_volunteer_grant_managerial_role(request_data, manager_user):
     validate_user_is_a_volunteer(volunteer_participation)
     validate_user_is_attending_event(volunteer_participation)
 
-    volunteer_participation.set_as_manager()
+    volunteer_participation.set_as_manager(True)
 
 
+def _validate_revoked_volunteer_has_manager_access(volunteer_participation):
+    if not volunteer_participation.has_manager_access():
+        raise InvalidRequestException('Volunteer is not a manager of event')
+
+
+@catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
+def handle_revoke_volunteer_managerial_role(request_data, event_creator):
+    event = event_utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
+    validate_event_ownership(event, event_creator)
+
+    volunteer_user_id = firebase_utils.get_user_id_from_email_or_phone_number(request_data.get('volunteer_email_phone'))
+    granted_user = user_utils.get_user_by_id_or_raise_exception(volunteer_user_id)
+    volunteer_participation = event.get_volunteer_participation_by_participant(granted_user)
+
+    validate_user_is_a_volunteer(volunteer_participation)
+    _validate_revoked_volunteer_has_manager_access(volunteer_participation)
+    volunteer_participation.set_as_manager(False)
 

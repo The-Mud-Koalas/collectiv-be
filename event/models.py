@@ -557,8 +557,8 @@ class VolunteerParticipation(AttendableEventParticipation):
         self.event.decrement_volunteer()
         self.delete()
 
-    def set_as_manager(self):
-        self.granted_manager_access = True
+    def set_as_manager(self, granted_manager_access):
+        self.granted_manager_access = granted_manager_access
         self.save()
 
 
