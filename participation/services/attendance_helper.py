@@ -65,3 +65,5 @@ def handle_reward_grant(user, activity_data, attendable_participation):
 def validate_event_is_initiative(event):
     if event.get_type() != EventType.INITIATIVE:
         raise InvalidRequestException(f'Event with ID {event.get_id()} is not an initiative')
+
+
