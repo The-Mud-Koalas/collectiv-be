@@ -23,6 +23,10 @@ def serve_redeem_reward(request):
     """
     request_data = json.loads(request.body.decode('utf-8'))
     redeem_reward_data = reward.handle_redeem_reward(request_data, request.user)
-    return Response(data=redeem_reward_data)
+    response_data = {
+        'message': 'Reward was successfully redeemed',
+        'point_data': redeem_reward_data
+    }
+    return Response(data=response_data)
 
 
