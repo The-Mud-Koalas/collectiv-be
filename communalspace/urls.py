@@ -24,6 +24,7 @@ urlpatterns = [
     path('analytics/', include('analytics.urls')),
     path('event/', include('event.urls')),
     path('participation/', include('participation.urls')),
+    path('report/', include('report.urls')),
     path('review/', include('review.urls')),
     path('reward/', include('reward.urls')),
     path('space/', include('space.urls')),

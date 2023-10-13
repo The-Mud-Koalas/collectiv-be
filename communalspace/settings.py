@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'analytics',
     'event',
     'participation',
+    'report',
     'review',
     'reward',
     'space',
