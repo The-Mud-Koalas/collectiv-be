@@ -323,6 +323,9 @@ class Initiative(Event):
 class GoalKind(models.Model):
     kind = models.CharField(primary_key=True)
 
+    def get_kind(self):
+        return self.kind
+
 
 class GoalKindSerializer(serializers.ModelSerializer):
     class Meta:
@@ -344,6 +347,9 @@ class Project(Event):
 
     def get_goal(self):
         return self.goal
+
+    def get_goal_kind(self):
+        return self.goal_kind.get_kind()
 
     def get_progress(self):
         return self.progress
@@ -822,6 +828,7 @@ class ProjectSerializer(serializers.ModelSerializer):
     def to_representation(self, project):
         serialized_data = BaseEventSerializer(project).data
         serialized_data['goal'] = project.get_goal()
+        serialized_data['goal_kind'] = project.get_goal_kind()
         serialized_data['measurement_unit'] = project.get_measurement_unit()
         serialized_data['progress'] = project.get_progress()
         serialized_data['transactions'] = ContributionActivitySerializer(project.get_activities(), many=True).data
