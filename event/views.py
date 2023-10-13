@@ -20,6 +20,7 @@ from .services import (
     event_management,
     goals,
     tags,
+    update_event
 )
 import json
 
@@ -180,6 +181,36 @@ def serve_get_event_image_by_id(request, event_id):
 
     else:
         return Response(data={'message': 'No image has been uploaded for the event'})
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
+def serve_update_event(request, event_id):
+    """
+    This view serves as the endpoint to update event.
+    ----------------------------------------------------------
+    request-data must contain:
+    event_id: UUID string
+
+    is_project: boolean
+    project_goal: float (optional, required if is_project is true)
+    goal_measurement_unit: float (optional, required if is_project is true)
+    min_num_of_volunteers: integer
+
+    start_date_time: ISO datetime string
+    end_date_time: ISO datetime string
+
+    location_id: UUID string
+    tags: list[string] (containing the tags ID for the event)
+
+    event_image: Image Blob
+    """
+    request_data = request.data
+    updated_event = update_event.handle_update_event(event_id, request_data, request.user)
+    response_data = EventSerializer(updated_event).data
+    return Response(data=response_data)
 
 
 @require_GET

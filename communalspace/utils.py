@@ -61,7 +61,7 @@ def is_valid_iso_date_string(iso_datetime):
     try:
         get_date_from_date_time_string(iso_datetime)
         return True
-    except ValueError:
+    except (ValueError, AttributeError):
         return False
 
 

@@ -9,6 +9,8 @@ from .views import (
     serve_get_event_image_by_id,
     serve_get_events_per_location,
     serve_get_event_volunteers,
+    serve_get_all_tags,
+    serve_update_event,
     serve_get_nearby_events,
     serve_get_or_create_tags,
     serve_search_events,
@@ -32,6 +34,7 @@ urlpatterns = [
     path('search/', serve_search_events),
     path('status/update/', serve_update_event_status),
     path('tags/', serve_get_all_tags),
+    path('update/<str:event_id>/', serve_update_event),
     path('tags/get-or-create/multiple/', serve_get_or_create_tags),
     path('managers/volunteers/', serve_get_event_volunteers),
 ]

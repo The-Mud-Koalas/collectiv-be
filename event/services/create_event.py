@@ -26,7 +26,7 @@ def _validate_event_basic_attributes(request_data):
         raise InvalidRequestException('Is Project must be boolean')
 
 
-def _validate_event_updatable_attributes(request_data):
+def validate_event_updatable_attributes(request_data):
     if request_data.get('volunteer_registration_enabled') is not None and \
             not isinstance(request_data.get('volunteer_registration_enabled'), bool):
         raise InvalidRequestException('Volunteer registration toggle must be a boolean')
@@ -52,7 +52,7 @@ def _validate_event_updatable_attributes(request_data):
             raise InvalidRequestException('Tag ID must be a valid UUID string')
 
 
-def _validate_additional_project_attributes(request_data):
+def validate_additional_project_attributes(request_data):
     if not request_data.get('project_goal'):
         raise InvalidRequestException('Project Goal must exist in a project')
 
@@ -72,7 +72,7 @@ def _validate_additional_project_attributes(request_data):
         raise InvalidRequestException('Goal measurement unit must be a string')
 
 
-def _validate_additional_initiative_attributes(request_data):
+def validate_additional_initiative_attributes(request_data):
     if request_data.get('participation_registration_enabled') is not None and \
             not isinstance(request_data.get('participation_registration_enabled'), bool):
         raise InvalidRequestException('Participation registration toggle must be boolean')
@@ -80,12 +80,12 @@ def _validate_additional_initiative_attributes(request_data):
 
 def _validate_create_event_request(request_data):
     _validate_event_basic_attributes(request_data)
-    _validate_event_updatable_attributes(request_data)
+    validate_event_updatable_attributes(request_data)
 
     if request_data.get('is_project'):
-        _validate_additional_project_attributes(request_data)
+        validate_additional_project_attributes(request_data)
     else:
-        _validate_additional_initiative_attributes(request_data)
+        validate_additional_initiative_attributes(request_data)
 
 
 def _create_project(request_data, event_category, event_space, creator):
@@ -193,7 +193,7 @@ def _upload_event_image(event, image_file):
         event.set_event_image(image_file_name)
 
 
-def _validate_event_ownership(event, user):
+def validate_event_ownership(event, user):
     if event.get_creator() != user:
         raise RestrictedAccessException(f'User {user.get_name()} is not the creator of event {event.get_name()}')
 
@@ -201,7 +201,7 @@ def _validate_event_ownership(event, user):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_upload_event_image(request_data, image_file, user):
     event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    _validate_event_ownership(event, user)
+    validate_event_ownership(event, user)
     _upload_event_image(event, image_file)
 
 
