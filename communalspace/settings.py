@@ -50,9 +50,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 
+    'analytics',
     'event',
     'participation',
     'review',
+    'reward',
     'space',
     'users',
     'forums',
