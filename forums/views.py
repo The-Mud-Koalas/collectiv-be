@@ -30,11 +30,9 @@ def check_authorization(user: User, event_id: str) -> bool:
         has_left_forum = True
 
     if event.creator == user:
-        print("Creator")
         return True
 
     if attend_event is not None and has_left_forum is not True:
-        print("Attends event")
         return True
 
     return False
