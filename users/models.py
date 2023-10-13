@@ -122,6 +122,16 @@ class User(AbstractUser):
     def get_full_name(self):
         return self.full_name
 
+    def get_reward_points(self):
+        return self.reward_points
+
+    def redeem_reward(self, amount_of_points_to_be_redeemed):
+        if amount_of_points_to_be_redeemed > self.reward_points:
+            raise ValueError("Amount of points to be redeemed must not exceed owned points")
+
+        self.reward_points -= amount_of_points_to_be_redeemed
+        self.save()
+
 
 class UserSerializer(serializers.ModelSerializer):
     has_been_prompted_for_location_tracking = serializers.SerializerMethodField(
