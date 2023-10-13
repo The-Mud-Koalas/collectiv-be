@@ -17,7 +17,6 @@ from .views import (
     serve_upload_event_image,
     serve_update_event_status,
     serve_update_project_progress,
-
 )
 
 urlpatterns = [
