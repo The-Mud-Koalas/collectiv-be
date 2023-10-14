@@ -1,5 +1,5 @@
 from . import utils
-from ..models import Event
+from ..models import Event, EventStatus
 from ..choices import EventType
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.settings import GOOGLE_STORAGE_BUCKET_NAME
@@ -35,12 +35,16 @@ def handle_get_event_image_by_id(event_id):
         return None
 
 
-def _get_active_events_of_spaces(spaces):
+def _get_all_events_of_spaces(spaces):
     events_of_spaces = Event.objects.none()
     for space_ in spaces:
-        events_of_spaces = events_of_spaces | space_.get_active_events_of_space()
+        events_of_spaces = events_of_spaces | space_.get_all_events_of_space()
 
     return events_of_spaces
+
+
+def _get_active_events_of_spaces(spaces):
+    return _get_all_events_of_spaces(spaces).filter(status__in=(EventStatus.SCHEDULED, EventStatus.ON_GOING))
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ValueError,))
@@ -57,7 +61,7 @@ def handle_get_interest_based_nearby_active_events(request_data, user: User):
     return nearby_events.filter(tags__in=user.get_interests())
 
 
-def _get_active_events_based_on_coordinate(latitude, longitude):
+def _get_all_events_sorted_based_on_coordinate(latitude, longitude):
     if latitude is not None and longitude is not None:
         all_locations = Location.objects.all()
         sorted_locations = sorted(
@@ -68,12 +72,17 @@ def _get_active_events_based_on_coordinate(latitude, longitude):
                 l.latitude,
                 l.longitude)
         )
-        events = _get_active_events_of_spaces(sorted_locations)
+        events = _get_all_events_of_spaces(sorted_locations)
 
     else:
-        events = Event.objects.filter_active().order_by('start_date_time')
+        events = Event.objects.order_by('start_date_time')
 
     return events
+
+
+def _get_active_events_based_on_coordinate(latitude, longitude):
+    return (_get_all_events_sorted_based_on_coordinate(latitude, longitude)
+            .filter(status__in=(EventStatus.SCHEDULED, EventStatus.ON_GOING)))
 
 
 def _filter_events_based_on_search_parameter(events, search_parameter):
@@ -105,7 +114,7 @@ def handle_get_events_per_location(location_id, request_data):
 
 def handle_search_events_location_wide(request_data):
     latitude, longitude = space_utils.parse_coordinate_fail_silently(request_data)
-    events = _get_active_events_based_on_coordinate(latitude, longitude)
+    events = _get_all_events_sorted_based_on_coordinate(latitude, longitude)
     return _filter_events_based_on_search_parameter(events, request_data)
 
 

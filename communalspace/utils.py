@@ -103,10 +103,12 @@ def generate_file_response(response_file):
 def parse_limit_page(limit, page):
     try:
         limit = int(limit)
-        page = int(page)
-
     except (ValueError, TypeError):
         limit = DEFAULT_PAGE_LIMIT
+
+    try:
+        page = int(page)
+    except (ValueError, TypeError):
         page = 1
 
     return limit, page
