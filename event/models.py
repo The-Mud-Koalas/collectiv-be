@@ -183,6 +183,12 @@ class Event(PolymorphicModel):
     def get_category_name(self):
         return self.get_category().get_name()
 
+    def get_start_date_time(self):
+        return self.start_date_time
+
+    def get_end_date_time(self):
+        return self.end_date_time
+
     def get_start_date_time_iso_format(self):
         return self.start_date_time.isoformat()
 
