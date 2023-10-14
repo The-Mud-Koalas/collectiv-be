@@ -12,6 +12,8 @@ class Forum(models.Model):
     average_sentiment_score = models.FloatField(default=None, null=True)
     number_of_post_sentiment_calculated = models.PositiveIntegerField(default=0)
 
+    top_words = models.JSONField(default=dict)
+
     def get_event(self) -> Event:
         return self.event
 
