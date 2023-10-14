@@ -2,7 +2,7 @@ name: Production
 on:
   push:
     branches:
-      - 'master'
+      - 'master-2'
 
 jobs:
     sonarcloud:
@@ -20,7 +20,7 @@ jobs:
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   deploy:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master-2'
     name: Production to Cloud Run
     runs-on: ubuntu-latest
     needs: sonarcloud
