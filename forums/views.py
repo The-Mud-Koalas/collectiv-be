@@ -3,46 +3,20 @@ from django.db import transaction
 from communalspace.decorators import firebase_authenticated
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from event.models import Event
-from users.models import User
 from .models import ForumPostSerializer, Forum
 from .services import create_post
 import json
+
+from .services.forum_auth import check_authorization
 from .services.vote_post import upvote_post, downvote_post
-
-
-def check_authorization(user: User, event_id: str) -> bool:
-    """
-    This function checks if the user is authorized to perform the action.
-    ----------------------------------------------------------
-    user: User object
-    user_id: UUID string
-    event_id: UUID string
-
-    * The user information will be taken from the firebase authentication.
-    """
-    event = Event.objects.get(pk=event_id)
-    attend_event = event.get_all_type_participation_by_participant(user)
-    try:
-        participation = event.get_all_type_participation_by_participant(user)
-        has_left_forum = participation.get_has_left_forum()
-    except:
-        has_left_forum = True
-
-    if event.creator == user:
-        return True
-
-    if attend_event is not None and has_left_forum is not True:
-        return True
-
-    return False
+from .services.range_find_post import find_post_in_range
 
 
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def serve_create_forum_post(request, forum_id):
+def serve_create_forum_post(request, event_id):
     """
     This view serves as the endpoint to create a forum post.
     ----------------------------------------------------------
@@ -53,20 +27,10 @@ def serve_create_forum_post(request, forum_id):
 
     * The user information will be taken from the firebase authentication.
     """
-    author_id = request.user
-    try:
-        forum = Forum.objects.get(pk=forum_id)
-        event_id = str(forum.event.id)
-    except Forum.DoesNotExist:
-        return Response({"error": "Forum not found"}, status=404)
-
     request_data = json.loads(request.body.decode('utf-8'))
-    if not check_authorization(author_id, event_id):
-        return Response({"error": "User not authorized to create post"}, status=403)
-    else:
-        created_post = create_post.handle_create_forum_post(request_data, author_id, forum_id)
-        response_data = ForumPostSerializer(created_post).data
-        return Response(data=response_data)
+    created_post = create_post.handle_create_forum_post(request_data, request.user, event_id)
+    response_data = ForumPostSerializer(created_post).data
+    return Response(data=response_data)
 
 
 @require_POST
@@ -138,3 +102,21 @@ def get_forum_posts_by_event(request, event_id):
         posts = forum.forumpost_set.all()
         response_data = ForumPostSerializer(posts, many=True).data
         return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def get_forum_posts_by_event_and_range(request, event_id):
+    """
+    This view serves as the endpoint to get all forum posts for an event
+    in a certain time range
+    ----------------------------------------------------------
+    request-data must contain:
+    event_id: UUID string
+
+    * The user information will be taken from the firebase authentication.
+    """
+    posts = find_post_in_range(request.GET, request.user, event_id)
+    response_data = ForumPostSerializer(posts, many=True).data
+    return Response(data=response_data)
