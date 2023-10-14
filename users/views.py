@@ -19,14 +19,32 @@ def serve_update_user_data(request):
     and preference.
     ----------------------------------------------------------
     request-data must contain:
-    full-name: string
-    preferred-radius: integer
-    location-track: boolean
+    full_name: string
+    preferred_radius: integer
+    location_track: boolean
     """
     request_data = json.loads(request.body.decode('utf-8'))
     user.handle_update_user_data(request.user, request_data)
     response_data = {'message': 'User data and preferences is successfully updated'}
     return Response(data=response_data)
+
+
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
+def serve_update_user_location_tracking_preference(request):
+    """
+    This view serves as the endpoint to update the user's
+    location tracking preference.
+    ----------------------------------------------------------
+    location_track: boolean
+    """
+    request_data = json.loads(request.body.decode('utf-8'))
+    user.handle_update_user_location_tracking_preference(request_data, request.user)
+    response_data = {'message': 'User data and preferences is successfully updated'}
+    return Response(data=response_data)
+
 
 
 @require_GET
