@@ -1,8 +1,8 @@
-from django.core.exceptions import ObjectDoesNotExist
-
 from communalspace import utils as app_utils
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
 from communalspace.exceptions import InvalidRequestException
+from django.core.exceptions import ObjectDoesNotExist
+from review.services import sentiment
 from users.models import User
 from forums.models import Forum
 from forums.models import ForumPost
@@ -20,13 +20,13 @@ def _validate_create_forum_post_request(request_data, author_id, forum_id):
 
 
 def _create_forum_post(request_data, author, forum) -> ForumPost:
-    post = ForumPost.objects.create(
+    forum_post_sentiment_score = sentiment.compute_sentiment_score_from_text(request_data.get('content'))
+    return forum.create_post(
         content=request_data.get('content'),
         author=author,
-        forum=forum,
-        is_anonymous=request_data.get('is_anonymous', False)
+        is_anonymous=request_data.get('is_anonymous', False),
+        sentiment_score=forum_post_sentiment_score
     )
-    return post
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))

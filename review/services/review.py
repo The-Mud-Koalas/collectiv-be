@@ -28,9 +28,9 @@ def _validate_participant_can_submit_review(participation):
 def submit_review_and_compute_sentiment(participation, request_data):
     review_sentiment_score = sentiment.compute_sentiment_score_from_text(request_data.get('event_comment'))
     return participation.create_review(
-        request_data.get('event_rating'),
-        request_data.get('event_comment'),
-        review_sentiment_score
+        rating=request_data.get('event_rating'),
+        comment=request_data.get('event_comment'),
+        sentiment_score=review_sentiment_score
     )
 
 

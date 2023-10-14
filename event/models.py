@@ -1,3 +1,4 @@
+from communalspace import utils as app_utils
 from communalspace.settings import MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY
 from django.db import models
 from django.db.models.functions import Trunc
@@ -95,11 +96,14 @@ class Event(PolymorphicModel):
     event_image_directory = models.TextField(null=True, default=None)
 
     # Analytics attributes
-    average_sentiment_score = models.FloatField(default=0)
+    average_sentiment_score = models.FloatField(default=None, null=True)
     number_of_sentiments_submitted = models.PositiveIntegerField(default=0)
 
-    average_event_rating = models.FloatField(default=0)
+    average_event_rating = models.FloatField(default=None, null=True)
     number_of_ratings_submitted = models.PositiveIntegerField(default=0)
+
+    average_forum_post_sentiment_score = models.FloatField(default=None, null=True)
+    number_of_post_sentiment_computed = models.PositiveIntegerField(default=0)
 
     objects = EventManager()
 
@@ -123,18 +127,32 @@ class Event(PolymorphicModel):
     def get_all_participants(self):
         raise NotImplementedError
 
+    def update_average_forum_post_sentiment_score(self, new_sentiment_score):
+        self.average_forum_post_sentiment_score = app_utils.update_average(
+            new_sentiment_score,
+            self.average_forum_post_sentiment_score,
+            self.number_of_post_sentiment_computed
+        )
+        self.number_of_post_sentiment_computed += 1
+        self.save()
+        return self.average_forum_post_sentiment_score
+
     def update_average_sentiment_score(self, new_sentiment_score):
-        current_sentiment_total = self.average_sentiment_score * self.number_of_sentiments_submitted
-        new_sentiment_total = current_sentiment_total + new_sentiment_score
-        self.average_sentiment_score = new_sentiment_total / (self.number_of_sentiments_submitted + 1)
+        self.average_sentiment_score = app_utils.update_average(
+            new_sentiment_score,
+            self.average_sentiment_score,
+            self.number_of_sentiments_submitted
+        )
         self.number_of_sentiments_submitted += 1
         self.save()
         return self.average_sentiment_score
 
     def update_average_event_rating(self, new_event_rating):
-        current_rating_total = self.average_event_rating * self.number_of_ratings_submitted
-        new_rating_total = current_rating_total + new_event_rating
-        self.average_event_rating = new_rating_total / (self.number_of_ratings_submitted + 1)
+        self.average_event_rating = app_utils.update_average(
+            new_event_rating,
+            self.average_event_rating,
+            self.number_of_ratings_submitted
+        )
         self.number_of_ratings_submitted += 1
         self.save()
         return self.average_event_rating
