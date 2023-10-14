@@ -1,7 +1,7 @@
 from communalspace.settings import DEFAULT_PAGE_LIMIT
-from datetime import datetime
+from datetime import datetime, timezone
 from django.http import HttpResponse
-from typing import Any, Union
+from typing import Any
 from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
@@ -47,7 +47,7 @@ def trim_all_request_attributes(request_attribute):
 def get_date_from_date_time_string(iso_datetime):
     iso_datetime = iso_datetime.strip('Z')
     try:
-        datetime_: datetime = datetime.fromisoformat(iso_datetime)
+        datetime_: datetime = datetime.fromisoformat(iso_datetime).astimezone(tz=timezone.utc)
         return datetime_
     except ValueError:
         raise ValueError(f'{iso_datetime} is not a valid ISO date string')
@@ -61,7 +61,7 @@ def is_valid_iso_date_string(iso_datetime):
     try:
         get_date_from_date_time_string(iso_datetime)
         return True
-    except ValueError:
+    except (ValueError, AttributeError):
         return False
 
 
@@ -103,10 +103,12 @@ def generate_file_response(response_file):
 def parse_limit_page(limit, page):
     try:
         limit = int(limit)
-        page = int(page)
-
     except (ValueError, TypeError):
         limit = DEFAULT_PAGE_LIMIT
+
+    try:
+        page = int(page)
+    except (ValueError, TypeError):
         page = 1
 
     return limit, page

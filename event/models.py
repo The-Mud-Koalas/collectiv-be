@@ -94,7 +94,22 @@ class Event(PolymorphicModel):
 
     event_image_directory = models.TextField(null=True, default=None)
 
+    # Analytics attributes
+    average_sentiment_score = models.FloatField(default=0)
+    number_of_sentiments_submitted = models.PositiveIntegerField(default=0)
+
+    average_event_rating = models.FloatField(default=0)
+    number_of_ratings_submitted = models.PositiveIntegerField(default=0)
+
     objects = EventManager()
+
+    def save(self, *args, **kwargs):
+        is_new = not self.pk
+        super(Event, self).save(*args, **kwargs)
+
+        if is_new:
+            from forums.models import Forum
+            Forum.objects.create(id=uuid.uuid4(), event=self)
 
     def get_type(self):
         raise NotImplementedError
@@ -107,6 +122,22 @@ class Event(PolymorphicModel):
 
     def get_all_participants(self):
         raise NotImplementedError
+
+    def update_average_sentiment_score(self, new_sentiment_score):
+        current_sentiment_total = self.average_sentiment_score * self.number_of_sentiments_submitted
+        new_sentiment_total = current_sentiment_total + new_sentiment_score
+        self.average_sentiment_score = new_sentiment_total / (self.number_of_sentiments_submitted + 1)
+        self.number_of_sentiments_submitted += 1
+        self.save()
+        return self.average_sentiment_score
+
+    def update_average_event_rating(self, new_event_rating):
+        current_rating_total = self.average_event_rating * self.number_of_ratings_submitted
+        new_rating_total = current_rating_total + new_event_rating
+        self.average_event_rating = new_rating_total / (self.number_of_ratings_submitted + 1)
+        self.number_of_ratings_submitted += 1
+        self.save()
+        return self.average_event_rating
 
     def get_volunteer_registration_enabled(self):
         return self.volunteer_registration_enabled
@@ -134,17 +165,29 @@ class Event(PolymorphicModel):
     def get_location(self):
         return self.location
 
+    def get_location_name(self):
+        return self.location.get_name()
+
     def get_creator(self):
         return self.creator
 
     def get_creator_id(self):
-        return self.get_creator().get_user_id()
+        return self.creator.get_user_id()
+
+    def get_creator_name(self):
+        return self.creator.get_full_name()
 
     def get_category(self):
         return self.category
 
     def get_category_name(self):
         return self.get_category().get_name()
+
+    def get_start_date_time(self):
+        return self.start_date_time
+
+    def get_end_date_time(self):
+        return self.end_date_time
 
     def get_start_date_time_iso_format(self):
         return self.start_date_time.isoformat()
@@ -163,12 +206,18 @@ class Event(PolymorphicModel):
     def get_all_volunteers(self):
         return self.volunteerparticipation_set.all()
 
-    def get_all_type_participations(self):
+    def get_all_type_participants(self):
         return EventParticipation.objects.filter_by_event(event=self)
+
+    def get_all_type_participants_user_id_name_pair(self):
+        return self.get_all_type_participants().values(
+            user_id=models.F('participant__user_id'),
+            full_name=models.F('participant__full_name')
+        )
 
     def get_reviews(self):
         reviews = ParticipationReview.objects.none()
-        for participation in self.get_all_type_participations():
+        for participation in self.get_all_type_participants():
             reviews = reviews | participation.get_reviews()
 
         return reviews
@@ -222,25 +271,24 @@ class Event(PolymorphicModel):
         self.status = status
         self.save()
 
-    # Analytics methods
+    def get_num_of_volunteers(self):
+        return self.current_num_of_volunteers
+
+    def get_num_of_participants(self):
+        return self.current_num_of_participants
+
     def get_event_registration_per_day(self):
-        return (self.get_all_type_participations()
+        return (self.get_all_type_participants()
                 .annotate(registration_date=Trunc('registration_time', 'day'))
                 .values('registration_date')
-                .annotate(models.Count('registration_date'))
+                .annotate(count=models.Count('registration_date'))
                 .order_by('registration_date'))
-
-    def get_event_average_rating(self):
-        """
-        Return average rating of event
-        """
-        return (self.get_reviews()
-                .aggregate(rating_average=models.Avg('event_rating'))
-                .get('rating_average'))
 
 
 class Initiative(Event):
     participation_registration_enabled = models.BooleanField(default=True)
+    average_participant_attendance_duration = models.FloatField(default=0)
+    number_of_durations_counted = models.PositiveIntegerField(default=0)
 
     def get_type(self):
         return EventType.INITIATIVE
@@ -261,14 +309,29 @@ class Initiative(Event):
     def get_all_participants(self):
         return self.initiativeparticipation_set.all()
 
+    def update_average_participant_attendance_duration(self, old_duration, new_duration):
+        current_duration_total = self.number_of_durations_counted * self.average_participant_attendance_duration
+        if self.number_of_durations_counted == 0 or old_duration == 0:
+            new_duration_total = current_duration_total + new_duration
+            self.average_participant_attendance_duration = new_duration_total / (self.number_of_durations_counted + 1)
+            self.number_of_durations_counted += 1
+
+        else:
+            new_duration_total = current_duration_total - old_duration + new_duration
+            self.average_participant_attendance_duration = new_duration_total / self.number_of_durations_counted
+
+        self.save()
+        return self.average_participant_attendance_duration
+
     def get_participants_average_attendance_duration(self):
-        return (self.get_all_participants()
-                .aggregate(average_duration=models.Avg('overall_duration_in_seconds'))
-                .get('average_duration'))
+        return self.average_participant_attendance_duration
 
 
 class GoalKind(models.Model):
     kind = models.CharField(primary_key=True)
+
+    def get_kind(self):
+        return self.kind
 
 
 class GoalKindSerializer(serializers.ModelSerializer):
@@ -291,6 +354,9 @@ class Project(Event):
 
     def get_goal(self):
         return self.goal
+
+    def get_goal_kind(self):
+        return self.goal_kind.get_kind()
 
     def get_progress(self):
         return self.progress
@@ -333,7 +399,7 @@ class EventParticipation(PolymorphicModel):
 
     objects = EventParticipationManager()
 
-    def get_event(self):
+    def get_event(self) -> Event:
         raise NotImplementedError
 
     def get_participation_type(self):
@@ -345,14 +411,12 @@ class EventParticipation(PolymorphicModel):
     def is_eligible_for_reward(self):
         raise NotImplementedError
 
-    def get_reviews(self):
-        return self.participationreview_set.all()
-
-    def get_review(self):
-        return self.get_reviews().first()
-
     def can_submit_review(self):
         return not self.has_submitted_review()
+
+    def set_submitted_review(self, submitted_review):
+        self.submitted_review = submitted_review
+        self.save()
 
     def has_been_rewarded(self):
         return self.rewarded
@@ -377,17 +441,26 @@ class EventParticipation(PolymorphicModel):
         self.has_left_forum = has_left_forum
         self.save()
 
-    def create_review(self, rating, comment):
-        self.submitted_review = True
-        self.save()
+    def create_review(self, rating, comment, sentiment_score=0):
+        self.set_submitted_review(True)
+        self.get_event().update_average_event_rating(rating)
+        self.get_event().update_average_sentiment_score(sentiment_score)
+
         return ParticipationReview.objects.create(
             participation=self,
             event_rating=rating,
-            event_comment=comment
+            event_comment=comment,
+            sentiment_score=sentiment_score
         )
 
+    def get_reviews(self):
+        return self.participationreview_set.all()
+
     def get_review(self):
-        return self.participationreview_set.filter(participation=self).first()
+        return self.get_reviews().first()
+
+    def get_participant(self):
+        return self.participant
 
 
 class AttendableEventParticipation(EventParticipation):
@@ -455,9 +528,22 @@ class AttendableEventParticipation(EventParticipation):
             'total_duration_in_seconds': self.overall_duration_in_seconds,
         }
 
+    def get_attendance_duration(self):
+        return self.overall_duration_in_seconds
+
 
 class InitiativeParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Initiative', on_delete=models.CASCADE)
+
+    def check_out(self):
+        previous_attendance_duration = self.get_attendance_duration()
+        check_out_data = super().check_out()
+        new_attendance_duration = self.get_attendance_duration()
+        self.get_event().update_average_participant_attendance_duration(
+            previous_attendance_duration,
+            new_attendance_duration
+        )
+        return check_out_data
 
     def get_event(self):
         return self.event
@@ -506,8 +592,8 @@ class VolunteerParticipation(AttendableEventParticipation):
         self.event.decrement_volunteer()
         self.delete()
 
-    def set_as_manager(self):
-        self.granted_manager_access = True
+    def set_as_manager(self, granted_manager_access):
+        self.granted_manager_access = granted_manager_access
         self.save()
 
 
@@ -639,7 +725,7 @@ class BaseEventParticipationSerializer(serializers.ModelSerializer):
 
 class ParticipationSerializerWithEventData(serializers.ModelSerializer):
     def to_representation(self, instance):
-        event_data = EventSerializer(instance.get_event()).data
+        event_data = BaseEventSerializer(instance.get_event()).data
         participation_data = BaseEventParticipationSerializer(instance).data
 
         return {
@@ -682,7 +768,7 @@ class TransactionHistorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class EventSerializer(serializers.ModelSerializer):
+class BaseEventSerializer(serializers.ModelSerializer):
     event_type = serializers.SerializerMethodField(method_name='get_event_type')
     event_location = serializers.SerializerMethodField(method_name='get_event_location_data')
     event_category = serializers.SerializerMethodField(method_name='get_category_data')
@@ -728,14 +814,19 @@ class EventSerializer(serializers.ModelSerializer):
             'event_creator_id',
             'event_start_date_time',
             'event_end_date_time',
-            'event_tags'
+            'event_tags',
+            'average_sentiment_score',
+            'average_event_rating',
         ]
 
 
 class InitiativeSerializer(serializers.ModelSerializer):
     def to_representation(self, initiative):
-        serialized_data = EventSerializer(initiative).data
+        serialized_data = BaseEventSerializer(initiative).data
         serialized_data['participation_registration_enabled'] = initiative.get_participation_registration_enabled()
+        serialized_data['average_participant_attendance_duration'] = \
+            initiative.get_participants_average_attendance_duration()
+
         return serialized_data
 
     class Meta:
@@ -745,8 +836,9 @@ class InitiativeSerializer(serializers.ModelSerializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     def to_representation(self, project):
-        serialized_data = EventSerializer(project).data
+        serialized_data = BaseEventSerializer(project).data
         serialized_data['goal'] = project.get_goal()
+        serialized_data['goal_kind'] = project.get_goal_kind()
         serialized_data['measurement_unit'] = project.get_measurement_unit()
         serialized_data['progress'] = project.get_progress()
         serialized_data['transactions'] = ContributionActivitySerializer(project.get_activities(), many=True).data
@@ -757,7 +849,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class BaseEventSerializer(serializers.ModelSerializer):
+class EventSerializer(serializers.ModelSerializer):
     def to_representation(self, event):
         if isinstance(event, Initiative):
             serialized_data = InitiativeSerializer(event).data
@@ -770,5 +862,3 @@ class BaseEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = '__all__'
-
-

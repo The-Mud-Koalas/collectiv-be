@@ -25,7 +25,7 @@ def get_user_by_id_or_raise_exception(user_id):
 def get_user_by_id_or_raise_exception_thread_safe(user_id):
     matching_user = User.objects.filter(user_id=user_id).select_for_update()
 
-    if len(matching_user):
+    if matching_user.exists():
         return matching_user[0]
 
     else:

@@ -1,5 +1,6 @@
 from .services import review
 from communalspace.decorators import firebase_authenticated
+from django.db import transaction
 from django.views.decorators.http import require_POST
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ import json
 @require_POST
 @api_view(['POST'])
 @firebase_authenticated()
+@transaction.atomic()
 def serve_submit_review(request):
     """
     This view serves as the endpoint for participants
