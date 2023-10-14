@@ -47,7 +47,7 @@ def trim_all_request_attributes(request_attribute):
 def get_date_from_date_time_string(iso_datetime):
     iso_datetime = iso_datetime.strip('Z')
     try:
-        datetime_: datetime = datetime.fromisoformat(iso_datetime).astimezone(tz=timezone.utc)
+        datetime_: datetime = datetime.fromisoformat(iso_datetime).replace(tzinfo=timezone.utc)
         return datetime_
     except ValueError:
         raise ValueError(f'{iso_datetime} is not a valid ISO date string')
