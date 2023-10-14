@@ -102,9 +102,6 @@ class Event(PolymorphicModel):
     average_event_rating = models.FloatField(default=None, null=True)
     number_of_ratings_submitted = models.PositiveIntegerField(default=0)
 
-    average_forum_post_sentiment_score = models.FloatField(default=None, null=True)
-    number_of_post_sentiment_computed = models.PositiveIntegerField(default=0)
-
     objects = EventManager()
 
     def save(self, *args, **kwargs):
@@ -127,15 +124,11 @@ class Event(PolymorphicModel):
     def get_all_participants(self):
         raise NotImplementedError
 
-    def update_average_forum_post_sentiment_score(self, new_sentiment_score):
-        self.average_forum_post_sentiment_score = app_utils.update_average(
-            new_sentiment_score,
-            self.average_forum_post_sentiment_score,
-            self.number_of_post_sentiment_computed
-        )
-        self.number_of_post_sentiment_computed += 1
-        self.save()
-        return self.average_forum_post_sentiment_score
+    def get_or_create_forum(self):
+        return self.forum_set.get_or_create()[0]
+
+    def get_forum_sentiment_score(self):
+        return self.get_or_create_forum().get_average_forum_sentiment_score()
 
     def update_average_sentiment_score(self, new_sentiment_score):
         self.average_sentiment_score = app_utils.update_average(
@@ -794,6 +787,10 @@ class BaseEventSerializer(serializers.ModelSerializer):
     event_start_date_time = serializers.SerializerMethodField(method_name='get_start_date_time_iso_format')
     event_end_date_time = serializers.SerializerMethodField(method_name='get_end_date_time_iso_format')
     event_tags = serializers.SerializerMethodField(method_name='get_tags_names')
+    forum_sentiment_score = serializers.SerializerMethodField(method_name='get_forum_sentiment_score')
+
+    def get_forum_sentiment_score(self, event):
+        return event.get_forum_sentiment_score()
 
     def get_event_type(self, event):
         return event.get_type()
@@ -835,6 +832,7 @@ class BaseEventSerializer(serializers.ModelSerializer):
             'event_tags',
             'average_sentiment_score',
             'average_event_rating',
+            'forum_sentiment_score',
         ]
 
 

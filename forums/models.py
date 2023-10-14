@@ -1,3 +1,4 @@
+from communalspace import utils as app_utils
 from django.db import models
 from rest_framework import serializers
 from event.models import Event
@@ -8,11 +9,29 @@ class Forum(models.Model):
     id = models.UUIDField(primary_key=True, auto_created=True, default=uuid.uuid4)
     event = models.ForeignKey('event.Event', on_delete=models.CASCADE)
 
+    average_sentiment_score = models.FloatField(default=None, null=True)
+    number_of_post_sentiment_calculated = models.PositiveIntegerField(default=0)
+
+    top_words = models.JSONField(default=dict)
+
     def get_event(self) -> Event:
         return self.event
 
+    def update_average_forum_sentiment_score(self, new_sentiment_score):
+        self.average_sentiment_score = app_utils.update_average(
+            new_sentiment_score,
+            self.average_sentiment_score,
+            self.number_of_post_sentiment_calculated
+        )
+        self.number_of_post_sentiment_calculated += 1
+        self.save()
+        return self.average_sentiment_score
+
+    def get_average_forum_sentiment_score(self):
+        return self.average_sentiment_score
+
     def create_post(self, content, author, sentiment_score, is_anonymous=False):
-        self.get_event().update_average_forum_post_sentiment_score(sentiment_score)
+        self.update_average_forum_sentiment_score(sentiment_score)
         return self.forumpost_set.create(
             content=content,
             author=author,
