@@ -3,7 +3,7 @@ from communalspace.decorators import catch_exception_and_convert_to_invalid_requ
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from communalspace.settings import GOOGLE_BUCKET_BASE_DIRECTORY, GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
-from datetime import datetime
+from datetime import datetime, timezone
 from django.core.exceptions import ObjectDoesNotExist
 from google.api_core import exceptions as google_exceptions
 from numbers import Number
@@ -27,7 +27,7 @@ def _validate_event_basic_attributes(request_data):
 
 
 def validate_event_time_range(start_time, end_time, check_future=True):
-    if check_future and start_time < datetime.utcnow():
+    if check_future and start_time < datetime.utcnow().astimezone(tz=timezone.utc):
         raise InvalidRequestException('Start time must not occur on a previous time')
 
     if start_time >= end_time:
