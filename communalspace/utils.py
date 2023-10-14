@@ -121,3 +121,12 @@ def convert_user_id_to_email_or_phone_number(user_id_data):
             'email_or_phone': firebase_utils.get_email_or_phone_number_from_id(user_id_datum.get('user_id'))
         } for user_id_datum in user_id_data
     ]
+
+
+def update_average(new_value, previous_average, previous_count):
+    if previous_count == 0:
+        current_total = 0
+    else:
+        current_total = previous_average * previous_count
+
+    return (current_total + new_value) / (previous_count + 1)
