@@ -2,6 +2,7 @@ from communalspace.exceptions import InvalidRequestException, RestrictedAccessEx
 from communalspace.settings import POINTS_PER_ATTENDANCE
 from event.choices import EventType
 from event.exceptions import InvalidCheckInCheckOutException
+from event.models import AttendableEventParticipation
 
 
 def validate_event_is_on_going(event):
@@ -67,3 +68,13 @@ def validate_event_is_initiative(event):
         raise InvalidRequestException(f'Event with ID {event.get_id()} is not an initiative')
 
 
+def force_check_out_participants_of_event(event):
+    non_checked_out_participations = (AttendableEventParticipation.objects
+                                      .filter_by_event(event)
+                                      .filter(is_currently_attending=True))
+
+    for participation in non_checked_out_participations:
+        participant = participation.get_participant()
+        participant.remove_currently_attended_event()
+        participation.check_out()
+        participation.set_violated_geofencing_rule()
