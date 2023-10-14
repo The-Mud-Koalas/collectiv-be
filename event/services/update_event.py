@@ -3,7 +3,7 @@ from .utils import convert_tag_ids_to_tags
 from ..models import Event, Project, Initiative
 from ..choices import EventType
 from .create_event import (
-    _validate_create_event_request,
+    validate_event_time_range,
     validate_event_ownership,
     validate_event_updatable_attributes,
     validate_additional_project_attributes,
@@ -25,10 +25,7 @@ def check_event_ownership(event, user):
     :return: True if user is the owner of the event, False otherwise
     """
     event = Event.objects.get(id=event)
-    print(event.creator)
-    if event.creator != user:
-        return False
-    return True
+    return event.creator == user
 
 
 def _update_event(event, request_data, event_tags) -> Event:
@@ -66,6 +63,14 @@ def _update_event(event, request_data, event_tags) -> Event:
 
 def _validate_update_event_request(event, request_data):
     validate_event_updatable_attributes(request_data)
+    start_time = app_utils.get_date_from_date_time_string(request_data.get('start_date_time'))
+    end_time = app_utils.get_date_from_date_time_string(request_data.get('end_date_time'))
+
+    if start_time == event.get_start_date_time():
+        validate_event_time_range(start_time, end_time, check_future=False)
+    else:
+        validate_event_time_range(start_time, end_time, check_future=True)
+
     if event.get_type() == EventType.PROJECT:
         validate_additional_project_attributes(request_data)
     else:

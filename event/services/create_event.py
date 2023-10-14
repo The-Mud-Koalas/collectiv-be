@@ -26,6 +26,14 @@ def _validate_event_basic_attributes(request_data):
         raise InvalidRequestException('Is Project must be boolean')
 
 
+def validate_event_time_range(start_time, end_time, check_future=True):
+    if check_future and start_time < datetime.utcnow():
+        raise InvalidRequestException('Start time must not occur on a previous time')
+
+    if start_time >= end_time:
+        raise InvalidRequestException('Start time must not occur after the end time')
+
+
 def validate_event_updatable_attributes(request_data):
     if request_data.get('volunteer_registration_enabled') is not None and \
             not isinstance(request_data.get('volunteer_registration_enabled'), bool):
@@ -36,13 +44,6 @@ def validate_event_updatable_attributes(request_data):
 
     if not app_utils.is_valid_iso_date_string(request_data.get('end_date_time')):
         raise InvalidRequestException('End date time must be a valid ISO datetime string')
-
-    if app_utils.get_date_from_date_time_string(request_data.get('start_date_time')) < datetime.utcnow():
-        raise InvalidRequestException('Start time must not occur on a previous time')
-
-    if (app_utils.get_date_from_date_time_string(request_data.get('start_date_time')) >=
-            app_utils.get_date_from_date_time_string(request_data.get('end_date_time'))):
-        raise InvalidRequestException('Start time must not occur after the end time')
 
     if not isinstance(request_data.get('tags'), list):
         raise InvalidRequestException('Tags must be a list')
@@ -81,6 +82,11 @@ def validate_additional_initiative_attributes(request_data):
 def _validate_create_event_request(request_data):
     _validate_event_basic_attributes(request_data)
     validate_event_updatable_attributes(request_data)
+    validate_event_time_range(
+        app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
+        app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
+        check_future=True
+    )
 
     if request_data.get('is_project'):
         validate_additional_project_attributes(request_data)

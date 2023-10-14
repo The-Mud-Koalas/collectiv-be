@@ -6,6 +6,7 @@ from communalspace.firebase_admin import firebase as firebase_utils
 from communalspace.utils import convert_user_id_to_email_or_phone_number
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from participation.services.attendance_helper import force_check_out_participants_of_event
 from participation.services.contribution import validate_event_is_project
 import numbers
 
@@ -49,11 +50,15 @@ def update_event_status(event, new_status):
     """
     Update event status.
     If new status is cancelled, email user
+    If new status is completed, check out all checked-in user
     """
     event.set_status(new_status)
 
     if new_status == EventStatus.CANCELLED.value:
         _handle_send_cancellation_notification(event)
+
+    if new_status == EventStatus.COMPLETED.value:
+        force_check_out_participants_of_event(event)
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
@@ -109,10 +114,9 @@ def handle_get_event_volunteers(request_data, user):
     _validate_user_is_manager_of_event(event, user)
     volunteers = (event.get_all_volunteers()
                   .annotate(
-                        user_id=models.F('participant'),
-                        volunteer_name=models.F('participant__full_name'),
-                        has_manager_access=models.F('granted_manager_access'))
+        user_id=models.F('participant'),
+        volunteer_name=models.F('participant__full_name'),
+        has_manager_access=models.F('granted_manager_access'))
                   .values('user_id', 'volunteer_name', 'has_manager_access'))
 
     return convert_user_id_to_email_or_phone_number(volunteers)
-

@@ -1,7 +1,7 @@
 from communalspace.settings import DEFAULT_PAGE_LIMIT
-from datetime import datetime
+from datetime import datetime, timezone
 from django.http import HttpResponse
-from typing import Any, Union
+from typing import Any
 from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
@@ -47,7 +47,7 @@ def trim_all_request_attributes(request_attribute):
 def get_date_from_date_time_string(iso_datetime):
     iso_datetime = iso_datetime.strip('Z')
     try:
-        datetime_: datetime = datetime.fromisoformat(iso_datetime)
+        datetime_: datetime = datetime.fromisoformat(iso_datetime).astimezone(tz=timezone.utc)
         return datetime_
     except ValueError:
         raise ValueError(f'{iso_datetime} is not a valid ISO date string')

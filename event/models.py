@@ -93,13 +93,6 @@ class Event(PolymorphicModel):
     tags = models.ManyToManyField('event.Tags')
 
     event_image_directory = models.TextField(null=True, default=None)
-    def save(self, *args, **kwargs):
-        is_new = not self.pk
-        super(Event, self).save(*args, **kwargs)
-
-        if is_new:
-            from forums.models import Forum
-            Forum.objects.create(id=uuid.uuid4(), event=self)
 
     # Analytics attributes
     average_sentiment_score = models.FloatField(default=0)
@@ -109,6 +102,14 @@ class Event(PolymorphicModel):
     number_of_ratings_submitted = models.PositiveIntegerField(default=0)
 
     objects = EventManager()
+
+    def save(self, *args, **kwargs):
+        is_new = not self.pk
+        super(Event, self).save(*args, **kwargs)
+
+        if is_new:
+            from forums.models import Forum
+            Forum.objects.create(id=uuid.uuid4(), event=self)
 
     def get_type(self):
         raise NotImplementedError
@@ -181,6 +182,12 @@ class Event(PolymorphicModel):
 
     def get_category_name(self):
         return self.get_category().get_name()
+
+    def get_start_date_time(self):
+        return self.start_date_time
+
+    def get_end_date_time(self):
+        return self.end_date_time
 
     def get_start_date_time_iso_format(self):
         return self.start_date_time.isoformat()
@@ -451,6 +458,9 @@ class EventParticipation(PolymorphicModel):
 
     def get_review(self):
         return self.get_reviews().first()
+
+    def get_participant(self):
+        return self.participant
 
 
 class AttendableEventParticipation(EventParticipation):
