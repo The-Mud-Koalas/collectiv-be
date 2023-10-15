@@ -37,7 +37,7 @@ def serve_create_forum_post(request, event_id):
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def upvote_forum_post(request, post_id):
+def upvote_forum_post(request, event_id):
     """
     This view serves as the endpoint to upvote a forum post.
     ----------------------------------------------------------
@@ -47,12 +47,13 @@ def upvote_forum_post(request, post_id):
     * The user information will be taken from the firebase authentication.
     """
     user_id = request.user
+    request_data = json.loads(request.body.decode('utf-8'))
 
-    if not check_authorization(user_id, post_id):
+    if not check_authorization(user_id, event_id):
         return Response({"error": "User not authorized to upvote post"}, status=403)
 
     else:
-        updated_post = upvote_post(post_id, user_id)
+        updated_post = upvote_post(request_data.get('post_id'), user_id)
         response_data = ForumPostSerializer(updated_post).data
         return Response(data=response_data)
 
@@ -61,7 +62,7 @@ def upvote_forum_post(request, post_id):
 @api_view(['POST'])
 @firebase_authenticated()
 @transaction.atomic()
-def downvote_forum_post(request, post_id):
+def downvote_forum_post(request, event_id):
     """
     This view serves as the endpoint to downvote a forum post.
     ----------------------------------------------------------
@@ -71,11 +72,12 @@ def downvote_forum_post(request, post_id):
     * The user information will be taken from the firebase authentication.
     """
     user_id = request.user
+    request_data = json.loads(request.body.decode('utf-8'))
 
-    if not check_authorization(user_id, post_id):
+    if not check_authorization(user_id, event_id):
         return Response({"error": "User not authorized to downvote post"}, status=403)
     else:
-        updated_post = downvote_post(post_id, user_id)
+        updated_post = downvote_post(request_data.get('post_id'), user_id)
         response_data = ForumPostSerializer(updated_post).data
         return Response(data=response_data)
 
