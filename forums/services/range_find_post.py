@@ -33,9 +33,9 @@ def find_post_in_range(request_data, user, event_id):
 
     posts = forum.forumpost_set.all()
     if before:
-        posts = posts.filter(posted_at__lte=before)
+        posts = posts.filter(posted_at__lt=before)
     if after:
-        posts = posts.filter(posted_at__gte=after)
+        posts = posts.filter(posted_at__gt=after)
     posts = posts.order_by("-posted_at")[:limit]
 
     return posts
