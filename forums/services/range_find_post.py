@@ -36,7 +36,9 @@ def find_post_in_range(request_data, user, event_id):
         posts = posts.filter(posted_at__lt=before)
     if after:
         posts = posts.filter(posted_at__gt=after)
+
+    posts = posts.order_by("-posted_at")
     if limit:
-        posts = posts.order_by("-posted_at")[:limit]
+        posts = posts[:limit]
 
     return posts
