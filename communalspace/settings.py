@@ -11,10 +11,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 from .credentials_setup import firebase_admin, google_storage
 from datetime import timedelta
+from dotenv import load_dotenv
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
 import dj_database_url
 import os
+
+
+load_dotenv()
 
 firebase_admin.setup_firebase_admin_credentials()
 google_storage.setup_google_storage_credentials()
@@ -49,6 +53,7 @@ INSTALLED_APPS = [
     'polymorphic',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'django_apscheduler',
 
     'analytics',
     'event',
@@ -178,3 +183,6 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'smtp.gmail.com')
+
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
+APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds

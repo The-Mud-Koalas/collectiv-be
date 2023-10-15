@@ -130,3 +130,8 @@ def update_average(new_value, previous_average, previous_count):
         current_total = previous_average * previous_count
 
     return (current_total + new_value) / (previous_count + 1)
+
+
+def get_previous_month_index(current_month_index):
+    return (current_month_index - 2) % 12 + 1
+
