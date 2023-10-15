@@ -15,7 +15,10 @@ class User(AbstractUser):
 
     user_id = models.CharField(max_length=30, unique=True, primary_key=True)
     full_name = models.CharField(max_length=50, null=True)
+
     reward_points = models.IntegerField(default=0)
+    previous_month_points = models.IntegerField(default=0)
+
     preferred_radius = models.FloatField(default=2000)
     location_track = models.BooleanField(default=True)
 
@@ -125,11 +128,20 @@ class User(AbstractUser):
     def get_reward_points(self):
         return self.reward_points
 
+    def get_previous_month_reward_points(self):
+        return self.previous_month_points
+
     def redeem_reward(self, amount_of_points_to_be_redeemed):
         if amount_of_points_to_be_redeemed > self.reward_points:
             raise ValueError("Amount of points to be redeemed must not exceed owned points")
 
         self.reward_points -= amount_of_points_to_be_redeemed
+        self.save()
+
+    def reset_monthly_point(self):
+        current_point = self.reward_points
+        self.previous_month_points = current_point
+        self.reward_points = 0
         self.save()
 
 
@@ -147,6 +159,7 @@ class UserSerializer(serializers.ModelSerializer):
             'user_id',
             'full_name',
             'reward_points',
+            'previous_month_points',
             'preferred_radius',
             'location_track',
             'has_been_prompted_for_location_tracking',

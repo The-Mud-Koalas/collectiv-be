@@ -1,3 +1,5 @@
+import datetime
+
 from communalspace import utils as app_utils
 from communalspace.settings import MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY
 from django.db import models
@@ -404,6 +406,7 @@ class Project(Event):
 class EventParticipation(PolymorphicModel):
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     registration_time = models.DateTimeField(auto_now=True)
+    first_participation_time = models.DateTimeField(null=True, default=None)
     has_left_forum = models.BooleanField(default=False)
     rewarded = models.BooleanField(default=False)
     submitted_review = models.BooleanField(default=False)
@@ -511,6 +514,9 @@ class AttendableEventParticipation(EventParticipation):
         return self.is_currently_attending
 
     def check_in(self):
+        if self.first_participation_time is None:
+            self.first_participation_time = datetime.datetime.utcnow()
+
         self.set_attended(True)
         check_in_activity = self.add_activity(AttendanceActivityType.CHECK_IN.value)
         self.is_currently_attending = True
@@ -628,6 +634,9 @@ class ContributionParticipation(EventParticipation):
         raise NotImplementedError('Contribution participation cannot be deleted')
 
     def register_contribution(self, contributed_amount):
+        if self.first_participation_time is None:
+            self.first_participation_time = datetime.datetime.utcnow()
+
         self.contributionactivity_set.create(contribution=contributed_amount)
         self.total_contribution += contributed_amount
         self.save()
