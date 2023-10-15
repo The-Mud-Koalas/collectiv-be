@@ -48,7 +48,7 @@ class ForumPost(models.Model):
     author = models.ForeignKey('users.User', on_delete=models.CASCADE)
     author_role = models.CharField(default=ParticipationType.PARTICIPANT)
     forum = models.ForeignKey('forums.Forum', on_delete=models.CASCADE)
-    posted_at = models.DateTimeField(auto_now=True)
+    posted_at = models.DateTimeField(auto_now_add=True)
     is_anonymous = models.BooleanField(default=False)
     vote_count = models.IntegerField(default=0)
     upvoters = models.ManyToManyField('users.User', related_name="upvoted_posts")
