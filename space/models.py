@@ -10,6 +10,7 @@ class Location(models.Model):
     name = models.CharField(max_length=50)
     latitude = models.FloatField()
     longitude = models.FloatField()
+    description = models.TextField(default=None, null=True)
 
     def get_name(self):
         return self.name

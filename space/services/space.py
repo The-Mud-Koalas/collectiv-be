@@ -23,12 +23,16 @@ def _validate_create_location_request(request_data: dict):
     if abs(request_data.get('longitude')) > 180:
         raise InvalidRequestException('Location longitude must be between -180 and 180')
 
+    if request_data.get('description') is not None and not isinstance(request_data.get('description'), str):
+        raise InvalidRequestException('Location description must be a string')
+
 
 def _create_location_from_request_data(request_data: dict) -> Location:
     return Location.objects.create(
         name=request_data.get('name'),
         latitude=request_data.get('latitude'),
-        longitude=request_data.get('longitude')
+        longitude=request_data.get('longitude'),
+        description=request_data.get('description', None),
     )
 
 
@@ -45,5 +49,9 @@ def handle_get_or_create_location(request_data: dict) -> Location:
 
 def handle_get_all_locations():
     return Location.objects.all()
+
+
+def handle_get_location_by_id(location_id):
+    return utils.get_space_by_id_or_raise_exception(location_id)
 
 
