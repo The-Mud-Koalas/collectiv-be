@@ -186,3 +186,8 @@ SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'smtp.gmail.com')
 
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds
+
+# AI Model Settings
+HUGGING_FACE_ACCESS_TOKEN = os.getenv("HUGGING_FACE_ACCESS_TOKEN")
+SENTIMENT_ANALYSIS_ENDPOINT = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
+TOKEN_CLASSIFICATION_ENDPOINT = "https://api-inference.huggingface.co/models/dbmdz/bert-large-cased-finetuned-conll03-english"
