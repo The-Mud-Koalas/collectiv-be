@@ -136,5 +136,5 @@ def serve_get_forum_analytics(request, event_id):
 @require_GET
 @api_view(['GET'])
 def server_get_global_forum_posts(request):
-    posts = find_trending_posts()
+    posts = find_trending_posts(request.GET)
     return Response(data=posts)
