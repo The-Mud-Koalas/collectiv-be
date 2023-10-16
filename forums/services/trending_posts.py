@@ -1,4 +1,4 @@
-from ..models import Forum
+from ..models import Forum, ForumPostSerializer
 
 
 def find_trending_posts():
@@ -12,7 +12,7 @@ def find_trending_posts():
             'event_name': forum.event.get_name(),
             'event_location_name': forum.event.get_location_name(),
             'forum_top_words': forum.get_forum_top_words(),
-            'forum_trending_posts': forum.forumpost_set.filter(vote_count__gte=20)
+            'forum_trending_posts': ForumPostSerializer(forum.forumpost_set.filter(vote_count__gte=20), many=True).data
         }
 
     return trending_posts
