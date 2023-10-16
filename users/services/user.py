@@ -20,7 +20,7 @@ def _validate_update_user_data_request(request_data):
     if not (3 <= len(request_data.get('full_name')) <= 50):
         raise InvalidRequestException('Full name must have a minimum length of 3 and a maximum length of 50')
 
-    if not isinstance(request_data.get('preferred-radius'), int):
+    if not isinstance(request_data.get('preferred_radius'), int):
         raise InvalidRequestException('Preferred radius must be an integer')
 
     if request_data.get('preferred_radius') <= 0:
