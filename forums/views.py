@@ -10,6 +10,7 @@ import json
 from .services.forum_auth import check_authorization
 from .services.vote_post import upvote_post, downvote_post
 from .services.range_find_post import find_post_in_range
+from .services.forum_analytics import get_forum_analytics
 
 
 @require_POST
@@ -122,3 +123,10 @@ def get_forum_posts_by_event_and_range(request, event_id):
     posts = find_post_in_range(request.GET, request.user, event_id)
     response_data = ForumPostSerializer(posts, many=True).data
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_forum_analytics(request, event_id):
+    analytics = get_forum_analytics(event_id)
+    return Response(data=analytics)

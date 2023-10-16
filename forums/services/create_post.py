@@ -3,6 +3,7 @@ from communalspace.decorators import catch_exception_and_convert_to_invalid_requ
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from django.core.exceptions import ObjectDoesNotExist
 from review.services import sentiment
+from .named_entity_recognition import recognize_entities_from_text
 from forums.models import ForumPost
 from event.services import utils as event_utils
 
@@ -20,12 +21,14 @@ def _validate_create_forum_post_request(request_data, author_id, event_id):
 
 def _create_forum_post(request_data, author, role, forum) -> ForumPost:
     forum_post_sentiment_score = sentiment.compute_sentiment_score_from_text(request_data.get('content'))
+    forum_post_named_entities = recognize_entities_from_text(request_data.get('content'))
     return forum.create_post(
         content=request_data.get('content'),
         author=author,
         author_role=role,
         is_anonymous=request_data.get('is_anonymous', False),
-        sentiment_score=forum_post_sentiment_score
+        sentiment_score=forum_post_sentiment_score,
+        named_entities=forum_post_named_entities
     )
 
 
