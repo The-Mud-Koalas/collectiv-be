@@ -100,7 +100,7 @@ def _filter_events_based_on_search_parameter(events, search_parameter):
         events = utils.filter_initiatives(events)
 
     if search_parameter.get('type') is not None and search_parameter.get('type').lower() == EventType.PROJECT:
-        events = utils.filter_initiatives(events)
+        events = utils.filter_projects(events)
 
     return events
 
