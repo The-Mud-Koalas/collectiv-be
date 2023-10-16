@@ -11,6 +11,7 @@ from .services.forum_auth import check_authorization
 from .services.vote_post import upvote_post, downvote_post
 from .services.range_find_post import find_post_in_range
 from .services.forum_analytics import get_forum_analytics
+from .services.trending_posts import find_trending_posts
 
 
 @require_POST
@@ -130,3 +131,10 @@ def get_forum_posts_by_event_and_range(request, event_id):
 def serve_get_forum_analytics(request, event_id):
     analytics = get_forum_analytics(event_id)
     return Response(data=analytics)
+
+
+@require_GET
+@api_view(['GET'])
+def server_get_global_forum_posts(request):
+    posts = find_trending_posts()
+    return Response(data=posts)
