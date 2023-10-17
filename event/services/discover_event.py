@@ -86,8 +86,22 @@ def _get_active_events_based_on_coordinate(latitude, longitude):
 
 
 def _filter_events_based_on_search_parameter(events, search_parameter):
+    events = events.order_by('-start_date_time')
+
     if search_parameter.get('status') is not None:
         events = events.filter(status__iexact=search_parameter.get('status'))
+
+        if search_parameter.get('status').lower() == EventStatus.SCHEDULED.lower():
+            events = events.order_by('start_date_time')
+
+        elif search_parameter.get('status').lower() == EventStatus.ON_GOING.lower():
+            events = events.order_by('start_date_time')
+
+        elif search_parameter.get('status').lower() == EventStatus.COMPLETED.lower():
+            events = events.order_by('-start_date_time')
+
+        elif search_parameter.get('status').lower() == EventStatus.CANCELLED.lower():
+            events = events.order_by('-start_date_time')
 
     if search_parameter.get('category_id') is not None:
         events = events.filter(category__id=search_parameter.get('category_id'))
