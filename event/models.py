@@ -484,6 +484,9 @@ class EventParticipation(PolymorphicModel):
     def get_participant(self):
         return self.participant
 
+    def is_first_time_attending(self):
+        return self.first_participation_time is None
+
 
 class AttendableEventParticipation(EventParticipation):
     is_currently_attending = models.BooleanField(default=False)
@@ -522,7 +525,7 @@ class AttendableEventParticipation(EventParticipation):
         return self.is_currently_attending
 
     def check_in(self):
-        if self.first_participation_time is None:
+        if self.is_first_time_attending():
             self.first_participation_time = datetime.datetime.utcnow()
 
         self.set_attended(True)
@@ -561,7 +564,9 @@ class InitiativeParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Initiative', on_delete=models.CASCADE)
 
     def check_in(self):
-        self.get_event().register_attending_participant()
+        if self.is_first_time_attending():
+            self.get_event().register_attending_participant()
+
         return super().check_in()
 
     def check_out(self):
