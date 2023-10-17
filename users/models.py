@@ -15,7 +15,10 @@ class User(AbstractUser):
 
     user_id = models.CharField(max_length=30, unique=True, primary_key=True)
     full_name = models.CharField(max_length=50, null=True)
+
     reward_points = models.IntegerField(default=0)
+    previous_month_points = models.IntegerField(default=0)
+
     preferred_radius = models.FloatField(default=2000)
     location_track = models.BooleanField(default=True)
 
@@ -24,6 +27,7 @@ class User(AbstractUser):
 
     event_currently_attended = models.ForeignKey('event.Event', on_delete=models.SET_NULL, default=None, null=True)
     currently_attending_role = models.CharField(max_length=15, default=None, null=True)
+    initial_location_track_prompt = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'user_id'
 
@@ -35,8 +39,18 @@ class User(AbstractUser):
     def __str__(self):
         return self.user_id
 
+    def has_been_prompted_for_location_tracking(self):
+        return self.initial_location_track_prompt
+
+    def set_has_been_prompted_for_location_tracking(self, has_been_prompted):
+        self.has_been_prompted = has_been_prompted
+        self.save()
+
     def get_currently_attended_event(self):
         return self.event_currently_attended
+
+    def get_currently_attended_event_id(self):
+        return self.event_currently_attended.get_id()
 
     def get_currently_attending_role(self):
         return self.currently_attending_role
@@ -108,16 +122,47 @@ class User(AbstractUser):
         for interest in interests:
             self.interests.add(interest)
 
+    def get_full_name(self):
+        return self.full_name
+
+    def get_reward_points(self):
+        return self.reward_points
+
+    def get_previous_month_reward_points(self):
+        return self.previous_month_points
+
+    def redeem_reward(self, amount_of_points_to_be_redeemed):
+        if amount_of_points_to_be_redeemed > self.reward_points:
+            raise ValueError("Amount of points to be redeemed must not exceed owned points")
+
+        self.reward_points -= amount_of_points_to_be_redeemed
+        self.save()
+
+    def reset_monthly_point(self):
+        current_point = self.reward_points
+        self.previous_month_points = current_point
+        self.reward_points = 0
+        self.save()
+
 
 class UserSerializer(serializers.ModelSerializer):
+    has_been_prompted_for_location_tracking = serializers.SerializerMethodField(
+        method_name='get_has_been_prompted_for_location_tracking'
+    )
+
+    def get_has_been_prompted_for_location_tracking(self, instance):
+        return instance.has_been_prompted_for_location_tracking()
+
     class Meta:
         model = User
         fields = [
             'user_id',
             'full_name',
             'reward_points',
+            'previous_month_points',
             'preferred_radius',
-            'location_track'
+            'location_track',
+            'has_been_prompted_for_location_tracking',
         ]
 
 

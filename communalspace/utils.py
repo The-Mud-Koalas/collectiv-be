@@ -1,10 +1,12 @@
 from communalspace.settings import DEFAULT_PAGE_LIMIT
-from datetime import datetime
+from datetime import datetime, timezone
 from django.http import HttpResponse
-from typing import Any, Union
+from typing import Any
 from .exceptions import UnauthorizedException
 import mimetypes
 import uuid
+
+from .firebase_admin import firebase as firebase_utils
 
 
 def get_id_token_from_authorization_header(authorization_header):
@@ -45,7 +47,7 @@ def trim_all_request_attributes(request_attribute):
 def get_date_from_date_time_string(iso_datetime):
     iso_datetime = iso_datetime.strip('Z')
     try:
-        datetime_: datetime = datetime.fromisoformat(iso_datetime)
+        datetime_: datetime = datetime.fromisoformat(iso_datetime).replace(tzinfo=timezone.utc)
         return datetime_
     except ValueError:
         raise ValueError(f'{iso_datetime} is not a valid ISO date string')
@@ -59,7 +61,7 @@ def is_valid_iso_date_string(iso_datetime):
     try:
         get_date_from_date_time_string(iso_datetime)
         return True
-    except ValueError:
+    except (ValueError, AttributeError):
         return False
 
 
@@ -101,10 +103,35 @@ def generate_file_response(response_file):
 def parse_limit_page(limit, page):
     try:
         limit = int(limit)
-        page = int(page)
-
     except (ValueError, TypeError):
         limit = DEFAULT_PAGE_LIMIT
+
+    try:
+        page = int(page)
+    except (ValueError, TypeError):
         page = 1
 
     return limit, page
+
+
+def convert_user_id_to_email_or_phone_number(user_id_data):
+    return [
+        {
+            **user_id_datum,
+            'email_or_phone': firebase_utils.get_email_or_phone_number_from_id(user_id_datum.get('user_id'))
+        } for user_id_datum in user_id_data
+    ]
+
+
+def update_average(new_value, previous_average, previous_count):
+    if previous_count == 0:
+        current_total = 0
+    else:
+        current_total = previous_average * previous_count
+
+    return (current_total + new_value) / (previous_count + 1)
+
+
+def get_previous_month_index(current_month_index):
+    return (current_month_index - 2) % 12 + 1
+

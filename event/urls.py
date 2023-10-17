@@ -4,11 +4,13 @@ from .views import (
     serve_create_event_category,
     serve_get_all_goal_kinds,
     serve_get_all_tags,
-    serve_get_event_analytics,
     serve_get_event_by_id,
     serve_get_event_categories,
     serve_get_event_image_by_id,
     serve_get_events_per_location,
+    serve_get_event_volunteers,
+    serve_get_all_tags,
+    serve_update_event,
     serve_get_nearby_events,
     serve_get_or_create_tags,
     serve_search_events,
@@ -17,9 +19,7 @@ from .views import (
     serve_update_project_progress,
 )
 
-
 urlpatterns = [
-    path('analytics/', serve_get_event_analytics),
     path('category/create/', serve_create_event_category),
     path('category/all/', serve_get_event_categories),
     path('create/', serve_create_event),
@@ -33,5 +33,7 @@ urlpatterns = [
     path('search/', serve_search_events),
     path('status/update/', serve_update_event_status),
     path('tags/', serve_get_all_tags),
+    path('update/<str:event_id>/', serve_update_event),
     path('tags/get-or-create/multiple/', serve_get_or_create_tags),
+    path('managers/volunteers/', serve_get_event_volunteers),
 ]

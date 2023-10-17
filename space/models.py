@@ -10,6 +10,10 @@ class Location(models.Model):
     name = models.CharField(max_length=50)
     latitude = models.FloatField()
     longitude = models.FloatField()
+    description = models.TextField(default=None, null=True)
+
+    def get_name(self):
+        return self.name
 
     def get_active_events_of_space(self):
         return self.event_set.filter_active().order_by('start_date_time')

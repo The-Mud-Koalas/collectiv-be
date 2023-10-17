@@ -3,7 +3,7 @@ from communalspace.decorators import catch_exception_and_convert_to_invalid_requ
 from communalspace.exceptions import InvalidRequestException, RestrictedAccessException
 from communalspace.settings import GOOGLE_BUCKET_BASE_DIRECTORY, GOOGLE_STORAGE_BUCKET_NAME
 from communalspace.storage import google_storage
-from datetime import datetime
+from datetime import datetime, timezone
 from django.core.exceptions import ObjectDoesNotExist
 from google.api_core import exceptions as google_exceptions
 from numbers import Number
@@ -26,25 +26,24 @@ def _validate_event_basic_attributes(request_data):
         raise InvalidRequestException('Is Project must be boolean')
 
 
-def _validate_event_updatable_attributes(request_data):
-    if not isinstance(request_data.get('min_num_of_volunteers'), int):
-        raise InvalidRequestException('Minimum number of volunteers must be an integer')
+def validate_event_time_range(start_time, end_time, check_future=True):
+    if check_future and start_time < datetime.utcnow().astimezone(tz=timezone.utc):
+        raise InvalidRequestException('Start time must not occur on a previous time')
 
-    if request_data.get('min_num_of_volunteers') < 0:
-        raise InvalidRequestException('Minimum number of volunteers must be a non negative number')
+    if start_time >= end_time:
+        raise InvalidRequestException('Start time must not occur after the end time')
+
+
+def validate_event_updatable_attributes(request_data):
+    if request_data.get('volunteer_registration_enabled') is not None and \
+            not isinstance(request_data.get('volunteer_registration_enabled'), bool):
+        raise InvalidRequestException('Volunteer registration toggle must be a boolean')
 
     if not app_utils.is_valid_iso_date_string(request_data.get('start_date_time')):
         raise InvalidRequestException('Start date time must be a valid ISO datetime string')
 
     if not app_utils.is_valid_iso_date_string(request_data.get('end_date_time')):
         raise InvalidRequestException('End date time must be a valid ISO datetime string')
-
-    if app_utils.get_date_from_date_time_string(request_data.get('start_date_time')) < datetime.utcnow():
-        raise InvalidRequestException('Start time must not occur on a previous time')
-
-    if (app_utils.get_date_from_date_time_string(request_data.get('start_date_time')) >=
-            app_utils.get_date_from_date_time_string(request_data.get('end_date_time'))):
-        raise InvalidRequestException('Start time must not occur after the end time')
 
     if not isinstance(request_data.get('tags'), list):
         raise InvalidRequestException('Tags must be a list')
@@ -54,7 +53,7 @@ def _validate_event_updatable_attributes(request_data):
             raise InvalidRequestException('Tag ID must be a valid UUID string')
 
 
-def _validate_additional_project_attributes(request_data):
+def validate_additional_project_attributes(request_data):
     if not request_data.get('project_goal'):
         raise InvalidRequestException('Project Goal must exist in a project')
 
@@ -74,15 +73,33 @@ def _validate_additional_project_attributes(request_data):
         raise InvalidRequestException('Goal measurement unit must be a string')
 
 
+def validate_additional_initiative_attributes(request_data):
+    if request_data.get('participation_registration_enabled') is not None and \
+            not isinstance(request_data.get('participation_registration_enabled'), bool):
+        raise InvalidRequestException('Participation registration toggle must be boolean')
+
+
 def _validate_create_event_request(request_data):
     _validate_event_basic_attributes(request_data)
-    _validate_event_updatable_attributes(request_data)
+    validate_event_updatable_attributes(request_data)
+    validate_event_time_range(
+        app_utils.get_date_from_date_time_string(request_data.get('start_date_time')),
+        app_utils.get_date_from_date_time_string(request_data.get('end_date_time')),
+        check_future=True
+    )
 
     if request_data.get('is_project'):
-        _validate_additional_project_attributes(request_data)
+        validate_additional_project_attributes(request_data)
+    else:
+        validate_additional_initiative_attributes(request_data)
 
 
 def _create_project(request_data, event_category, event_space, creator):
+    if request_data.get('volunteer_registration_enabled') is not None:
+        volunteer_registration_enabled = request_data.get('volunteer_registration_enabled')
+    else:
+        volunteer_registration_enabled = True
+
     return Project.objects.create(
         name=request_data.get('name'),
         description=request_data.get('description'),
@@ -93,11 +110,22 @@ def _create_project(request_data, event_category, event_space, creator):
         category=event_category,
         goal=request_data.get('project_goal'),
         measurement_unit=request_data.get('goal_measurement_unit'),
-        goal_kind=utils.get_or_create_goal_kind(request_data.get('goal_kind').lower())
+        goal_kind=utils.get_or_create_goal_kind(request_data.get('goal_kind').lower()),
+        volunteer_registration_enabled=volunteer_registration_enabled,
     )
 
 
 def _create_initiative(request_data, event_category, event_space, creator):
+    if request_data.get('volunteer_registration_enabled') is not None:
+        volunteer_registration_enabled = request_data.get('volunteer_registration_enabled')
+    else:
+        volunteer_registration_enabled = True
+
+    if request_data.get('participation_registration_enabled') is not None:
+        participation_registration_enabled = request_data.get('participation_registration_enabled')
+    else:
+        participation_registration_enabled = True
+
     return Initiative.objects.create(
         name=request_data.get('name'),
         description=request_data.get('description'),
@@ -106,6 +134,8 @@ def _create_initiative(request_data, event_category, event_space, creator):
         location=event_space,
         creator=creator,
         category=event_category,
+        volunteer_registration_enabled=volunteer_registration_enabled,
+        participation_registration_enabled=participation_registration_enabled,
     )
 
 
@@ -169,7 +199,7 @@ def _upload_event_image(event, image_file):
         event.set_event_image(image_file_name)
 
 
-def _validate_event_ownership(event, user):
+def validate_event_ownership(event, user):
     if event.get_creator() != user:
         raise RestrictedAccessException(f'User {user.get_name()} is not the creator of event {event.get_name()}')
 
@@ -177,7 +207,7 @@ def _validate_event_ownership(event, user):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_upload_event_image(request_data, image_file, user):
     event = utils.get_event_by_id_or_raise_exception(request_data.get('event_id'))
-    _validate_event_ownership(event, user)
+    validate_event_ownership(event, user)
     _upload_event_image(event, image_file)
 
 

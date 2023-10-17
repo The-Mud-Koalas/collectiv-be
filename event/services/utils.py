@@ -119,7 +119,7 @@ def filter_initiatives(list_of_events):
 
 
 def filter_projects(list_of_events):
-    project_ids = [event.get_id for event in list_of_events if event.get_type() == EventType.PROJECT]
+    project_ids = [event.get_id() for event in list_of_events if event.get_type() == EventType.PROJECT]
     return Event.objects.filter(id__in=project_ids)
 
 

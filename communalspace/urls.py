@@ -21,9 +21,13 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
-    path('user/', include('users.urls')),
-    path('space/', include('space.urls')),
+    path('analytics/', include('analytics.urls')),
     path('event/', include('event.urls')),
     path('participation/', include('participation.urls')),
+    path('report/', include('report.urls')),
     path('review/', include('review.urls')),
+    path('reward/', include('reward.urls')),
+    path('space/', include('space.urls')),
+    path('user/', include('users.urls')),
+    path('forums/', include('forums.urls')),
 ]

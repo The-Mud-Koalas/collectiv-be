@@ -30,6 +30,7 @@ def serve_get_or_create_location(request):
     latitude: float
     longitude: float
     name: string
+    description: string (optional)
     """
     request_data = json.loads(request.body.decode('utf-8'))
     location = space.handle_get_or_create_location(request_data)
@@ -92,3 +93,16 @@ def serve_get_list_of_subscribed_locations(request):
     subscribed_locations = discover_space.handle_get_list_of_subscribed_locations(request.user)
     response_data = LocationSerializer(subscribed_locations, many=True).data
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+def serve_get_location_by_id(request, location_id):
+    """
+    This view serves as the endpoint to get the details of
+    a location, given its ID.
+    """
+    location = space.handle_get_location_by_id(location_id)
+    response_data = LocationSerializer(location).data
+    return Response(data=response_data)
+

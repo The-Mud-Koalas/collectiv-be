@@ -11,10 +11,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 from .credentials_setup import firebase_admin, google_storage
 from datetime import timedelta
+from dotenv import load_dotenv
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
 import dj_database_url
 import os
+
+
+load_dotenv()
 
 firebase_admin.setup_firebase_admin_credentials()
 google_storage.setup_google_storage_credentials()
@@ -49,12 +53,17 @@ INSTALLED_APPS = [
     'polymorphic',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'django_apscheduler',
 
+    'analytics',
     'event',
     'participation',
+    'report',
     'review',
+    'reward',
     'space',
     'users',
+    'forums',
 ]
 
 MIDDLEWARE = [
@@ -164,3 +173,21 @@ AREA_BUFFER_RADIUS = 0.3
 # Reward Settings
 MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY = 0
 POINTS_PER_ATTENDANCE = 1
+
+# Settings for Automatic Email
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'smtp.gmail.com')
+
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
+APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds
+
+# AI Model Settings
+HUGGING_FACE_ACCESS_TOKEN = os.getenv("HUGGING_FACE_ACCESS_TOKEN")
+SENTIMENT_ANALYSIS_ENDPOINT = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
+TOKEN_CLASSIFICATION_ENDPOINT = "https://api-inference.huggingface.co/models/xlm-roberta-large-finetuned-conll03-english"

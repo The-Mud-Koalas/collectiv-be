@@ -2,25 +2,25 @@ from communalspace import paginators
 from communalspace import utils as app_utils
 from communalspace.decorators import firebase_authenticated
 from communalspace.serializers import PaginatorSerializer
+from communalspace.firebase_admin import firebase as firebase_utils
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import (
-    BaseEventSerializer,
+    EventSerializer,
     EventCategorySerializer,
     GoalKindSerializer,
-    InitiativeAnalyticsSerializer,
     TagsSerializer
 )
 from .services import (
-    analytics,
     category,
     create_event,
     discover_event,
     event_management,
     goals,
     tags,
+    update_event
 )
 import json
 
@@ -92,10 +92,13 @@ def serve_create_event(request):
     project_goal: float (optional, required if is_project is true)
     goal_measurement_unit: float (optional, required if is_project is true)
     goal_kind: string (optional, required if is_project is true)
+
+    volunteer_registration_enabled: Boolean (default is True)
+    participation_registration_enabled: Boolean (default is True, only applicable to initiative)
     """
     request_data = json.loads(request.body.decode('utf-8'))
     created_event = create_event.handle_create_event(request_data, user=request.user)
-    response_data = BaseEventSerializer(created_event).data
+    response_data = EventSerializer(created_event).data
     return Response(data=response_data)
 
 
@@ -158,7 +161,7 @@ def serve_get_event_by_id(request, event_id):
     event_id
     """
     event = discover_event.handle_get_event_by_id(event_id)
-    response_data = BaseEventSerializer(event).data
+    response_data = EventSerializer(event).data
     return Response(data=response_data)
 
 
@@ -180,6 +183,36 @@ def serve_get_event_image_by_id(request, event_id):
         return Response(data={'message': 'No image has been uploaded for the event'})
 
 
+@require_POST
+@api_view(['POST'])
+@firebase_authenticated()
+@transaction.atomic()
+def serve_update_event(request, event_id):
+    """
+    This view serves as the endpoint to update event.
+    ----------------------------------------------------------
+    request-data must contain:
+    event_id: UUID string
+
+    is_project: boolean
+    project_goal: float (optional, required if is_project is true)
+    goal_measurement_unit: float (optional, required if is_project is true)
+    min_num_of_volunteers: integer
+
+    start_date_time: ISO datetime string
+    end_date_time: ISO datetime string
+
+    location_id: UUID string
+    tags: list[string] (containing the tags ID for the event)
+
+    event_image: Image Blob
+    """
+    request_data = request.data
+    updated_event = update_event.handle_update_event(event_id, request_data, request.user)
+    response_data = EventSerializer(updated_event).data
+    return Response(data=response_data)
+
+
 @require_GET
 @api_view(['GET'])
 @firebase_authenticated()
@@ -196,7 +229,7 @@ def serve_get_nearby_events(request):
     """
     request_data = request.GET
     nearby_events = discover_event.handle_get_interest_based_nearby_active_events(request_data, request.user)
-    response_data = BaseEventSerializer(nearby_events, many=True).data
+    response_data = EventSerializer(nearby_events, many=True).data
     return Response(data=response_data)
 
 
@@ -223,8 +256,12 @@ def serve_get_events_per_location(request, location_id):
     request_data = request.GET
     matching_events_of_location = discover_event.handle_get_events_per_location(location_id, request_data)
     limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
-    paginated_result = paginators.paginate_result(matching_events_of_location, limit, page_number)
-    response_data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
+    paginated_result, total_page_number = paginators.paginate_result(matching_events_of_location, limit, page_number)
+    response_data = PaginatorSerializer(
+        paginated_result,
+        EventSerializer,
+        total_page_number
+    ).data
     return Response(data=response_data)
 
 
@@ -255,8 +292,12 @@ def serve_search_events(request):
     request_data = request.GET
     events = discover_event.handle_search_events(request_data)
     limit, page_number = app_utils.parse_limit_page(request_data.get('limit'), request_data.get('page'))
-    paginated_result = paginators.paginate_result(events, limit, page_number)
-    data = PaginatorSerializer(paginated_result, BaseEventSerializer).data
+    paginated_result, total_page_number = paginators.paginate_result(events, limit, page_number)
+    data = PaginatorSerializer(
+        paginated_result,
+        EventSerializer,
+        total_page_number
+    ).data
     return Response(data=data)
 
 
@@ -303,16 +344,13 @@ def serve_update_project_progress(request):
 
 @require_GET
 @api_view(['GET'])
-def serve_get_event_analytics(request):
+@firebase_authenticated()
+def serve_get_event_volunteers(request):
     """
-    This view serves as the endpoint to get the analytics of an event.
+    This view serves as the endpoint to get the list of volunteers to an event.
     ----------------------------------------------------------
     request-param must contain:
     event_id: UUID string
     """
-    request_data = request.GET
-    event = analytics.handle_get_event_analytics(request_data)
-    response_data = InitiativeAnalyticsSerializer(event).data
+    response_data = event_management.handle_get_event_volunteers(request.GET, request.user)
     return Response(data=response_data)
-
-

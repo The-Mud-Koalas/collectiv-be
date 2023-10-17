@@ -1,5 +1,4 @@
 from communalspace.decorators import catch_exception_and_convert_to_invalid_request_decorator
-from communalspace.exceptions import InvalidRequestException
 from communalspace.firebase_admin import firebase as firebase_utils
 from event.exceptions import InvalidCheckInCheckOutException
 from event.choices import ParticipationType
@@ -21,7 +20,7 @@ from users.services import utils as user_utils
 
 def _validate_user_is_a_participant(participation):
     if participation is None or participation.get_participation_type() != ParticipationType.PARTICIPANT:
-        raise InvalidRequestException('User is not a participant of event')
+        raise InvalidCheckInCheckOutException('User is not a participant of event')
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((
@@ -107,6 +106,7 @@ def handle_participation_aided_check_in(request_data, aiding_volunteer):
     participant = user_utils.get_user_by_id_or_raise_exception(participant_id)
 
     user_participation = initiative.get_participation_by_participant(participant)
+    _validate_user_is_a_participant(user_participation)
     validate_user_can_check_in(participant, user_participation)
     return check_in_user(participant, initiative, user_participation)
 
@@ -126,6 +126,7 @@ def handle_participation_aided_check_out(request_data, aiding_volunteer):
     participant = user_utils.get_user_by_id_or_raise_exception(participant_id)
 
     user_participation = initiative.get_participation_by_participant(participant)
+    _validate_user_is_a_participant(user_participation)
     validate_user_is_attending_event(user_participation)
     return check_out_user(participant, user_participation)
 

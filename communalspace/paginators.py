@@ -10,4 +10,4 @@ def paginate_result(results, limit=DEFAULT_PAGE_LIMIT, page_number=1):
     if not (1 <= page_number <= paginator.num_pages):
         page_number = 1
 
-    return paginator.page(page_number)
+    return paginator.page(page_number), paginator.num_pages
