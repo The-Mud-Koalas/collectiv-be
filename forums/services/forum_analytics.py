@@ -8,6 +8,8 @@ def get_forum_analytics(event_id):
 
     top_words = forum.get_forum_top_words()
     sentiment_score = forum.get_average_forum_sentiment_score()
+    num_posts = forum.forumpost_set.count()
+    num_trending_posts = forum.forumpost_set.filter(vote_count__gte=20).count()
 
-    return {"top_words": top_words, "sentiment_score": sentiment_score}
+    return {"top_words": top_words, "sentiment_score": sentiment_score, "num_posts": num_posts, "num_trending_posts": num_trending_posts}
 
