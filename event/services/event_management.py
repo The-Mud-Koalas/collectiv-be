@@ -6,7 +6,7 @@ from communalspace.firebase_admin import firebase as firebase_utils
 from communalspace.utils import convert_user_id_to_email_or_phone_number
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from participation.services.attendance_helper import force_check_out_participants_of_event
+from participation.services.participation_helpers import force_check_out_participants_of_event
 from participation.services.contribution import validate_event_is_project
 import numbers
 
