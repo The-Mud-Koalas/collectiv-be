@@ -20,6 +20,7 @@ def find_trending_posts(request_data):
             trending_posts.append({
                 'event_id': forum.event.get_id(),
                 'event_name': forum.event.get_name(),
+                'event_location_id': forum.event.location.id,
                 'event_location_name': forum.event.get_location_name(),
                 'forum_top_words': forum.get_forum_top_words(),
                 'forum_trending_posts': posts
