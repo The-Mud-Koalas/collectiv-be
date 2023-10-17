@@ -302,6 +302,7 @@ class Initiative(Event):
     participation_registration_enabled = models.BooleanField(default=True)
     average_participant_attendance_duration = models.FloatField(default=0)
     number_of_durations_counted = models.PositiveIntegerField(default=0)
+    number_of_attending_participants = models.PositiveIntegerField(default=0)
 
     def get_type(self):
         return EventType.INITIATIVE
@@ -336,8 +337,15 @@ class Initiative(Event):
         self.save()
         return self.average_participant_attendance_duration
 
+    def register_attending_participant(self):
+        self.number_of_attending_participants += 1
+        self.save()
+
     def get_participants_average_attendance_duration(self):
         return self.average_participant_attendance_duration
+
+    def get_number_of_attending_participant(self):
+        return self.number_of_attending_participants
 
 
 class GoalKind(models.Model):
@@ -551,6 +559,10 @@ class AttendableEventParticipation(EventParticipation):
 
 class InitiativeParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Initiative', on_delete=models.CASCADE)
+
+    def check_in(self):
+        self.get_event().register_attending_participant()
+        return super().check_in()
 
     def check_out(self):
         previous_attendance_duration = self.get_attendance_duration()
@@ -851,6 +863,7 @@ class InitiativeSerializer(serializers.ModelSerializer):
         serialized_data['participation_registration_enabled'] = initiative.get_participation_registration_enabled()
         serialized_data['average_participant_attendance_duration'] = \
             initiative.get_participants_average_attendance_duration()
+        serialized_data['number_of_attending_participants'] = initiative.get_number_of_attending_participant()
 
         return serialized_data
 
