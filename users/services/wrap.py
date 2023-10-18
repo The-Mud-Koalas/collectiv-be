@@ -29,7 +29,7 @@ def handle_get_user_wrap(user):
     last_month_initiative_duration = InitiativeParticipation.objects.filter(
         participant=user,
         first_participation_time__month=previous_month
-    ).aggregate(total_volunteering_duration=models.Sum('overall_duration_in_seconds'))
+    ).aggregate(total_initiative_duration=models.Sum('overall_duration_in_seconds'))
 
     last_month_contributions = (ContributionParticipation.objects.filter(
         participant=user,
