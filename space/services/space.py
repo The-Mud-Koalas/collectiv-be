@@ -55,3 +55,8 @@ def handle_get_location_by_id(location_id):
     return utils.get_space_by_id_or_raise_exception(location_id)
 
 
+def handle_get_location_by_latitude_longitude(request_data):
+    latitude, longitude = utils.parse_coordinate_fail_silently(request_data)
+    return Location.objects.filter(latitude=latitude, longitude=longitude).first()
+
+
