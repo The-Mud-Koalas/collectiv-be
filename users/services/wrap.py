@@ -1,4 +1,5 @@
 from . import utils
+from users.models import User
 from communalspace import utils as app_utils
 from datetime import datetime
 from django.db import models
@@ -47,6 +48,7 @@ def handle_get_user_wrap(user):
         'last_month_initiative_duration': last_month_initiative_duration,
         'last_month_contributions': last_month_contributions,
         'last_month_overall_rank': overall_rank,
+        'total_users': User.objects.count(),
     }
 
 
