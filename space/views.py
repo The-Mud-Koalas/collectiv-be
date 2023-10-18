@@ -40,6 +40,23 @@ def serve_get_or_create_location(request):
 
 @require_GET
 @api_view(['GET'])
+def serve_get_location_by_latitude_longitude(request):
+    """
+    This view serves as the endpoint to get the location matching
+    latitude and longitude.
+    ----------------------------------------------------------
+    request-data must contain:
+    latitude: float
+    longitude: float
+    """
+    request_data = request.GET
+    location = space.handle_get_location_by_latitude_longitude(request_data)
+    response_data = LocationSerializer(location).data if location is not None else None
+    return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
 @firebase_authenticated()
 def serve_get_nearby_non_subscribed_locations(request):
     """
