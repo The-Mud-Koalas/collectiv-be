@@ -17,7 +17,6 @@ from pathlib import Path
 import dj_database_url
 import os
 
-
 load_dotenv()
 
 firebase_admin.setup_firebase_admin_credentials()
@@ -33,11 +32,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ['DJANGO_SECRET']  # NOSONAR
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('ENVIRONMENT', 'DEVELOPMENT') == 'DEVELOPMENT'
 
 ALLOWED_HOSTS = ['*']
 CORS_ALLOW_HEADERS = ['*']
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+        'https://collectiv-fe-display.vercel.app',
+        'https://collectiv-fe-web.vercel.app',
+]
+
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        *CORS_ALLOWED_ORIGINS,
+        'http://localhost:8000',
+        'http://localhost:3000'
+    ]
+
 
 # Application definition
 
@@ -76,6 +86,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
+    'communalspace.middleware.CorsOriginPresenceMiddleware',
 ]
 
 ROOT_URLCONF = 'communalspace.urls'
