@@ -52,7 +52,7 @@ def serve_get_location_by_latitude_longitude(request):
     request_data = request.GET
     location = space.handle_get_location_by_latitude_longitude(request_data)
     response_data = LocationSerializer(location).data if location is not None else None
-    return Response(data=response_data)
+    return Response(data={'data': response_data})
 
 
 @require_GET
