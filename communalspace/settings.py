@@ -37,8 +37,10 @@ DEBUG = os.getenv('ENVIRONMENT', 'DEVELOPMENT') == 'DEVELOPMENT'
 ALLOWED_HOSTS = ['*']
 CORS_ALLOW_HEADERS = ['*']
 CORS_ALLOWED_ORIGINS = [
-        'https://collectiv-fe-display.vercel.app',
-        'https://collectiv-fe-web.vercel.app',
+    'https://collectiv-fe-display.vercel.app',
+    'https://collectiv-fe-web.vercel.app',
+    'https://mud-koalas-communal-space-stg-oxybezqe2a-ts.a.run.app',
+    'https://mud-koalas-communal-space-76mcmzlezq-ts.a.run.app',
 ]
 
 if DEBUG:
