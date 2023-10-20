@@ -2,7 +2,10 @@ from communalspace.decorators import catch_exception_and_convert_to_invalid_requ
 from communalspace.exceptions import InvalidRequestException
 from django.core.exceptions import ObjectDoesNotExist
 from event.services import utils as event_utils
-from participation.services.attendance_helper import validate_event_is_initiative
+from participation.services.participation_helpers import (
+    validate_event_is_initiative,
+    validate_user_is_not_event_creator
+)
 
 
 def validate_event_is_active(event):
@@ -38,7 +41,7 @@ def _validate_participation_registration(event, participant):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_register_user_participation_to_initiative(request_data, user):
     event = event_utils.get_initiative_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
-    validate_event_is_initiative(event)
+    validate_user_is_not_event_creator(event, user)
     _validate_initiative_is_accepting_participants(event)
     _validate_participation_registration(event, user)
     event.add_participant(user)
@@ -47,6 +50,7 @@ def handle_register_user_participation_to_initiative(request_data, user):
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))
 def handle_register_user_volunteering_to_event(request_data, user):
     event = event_utils.get_event_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
+    validate_user_is_not_event_creator(event, user)
     _validate_event_is_accepting_volunteers(event)
     _validate_participation_registration(event, user)
     event.add_volunteer(user)

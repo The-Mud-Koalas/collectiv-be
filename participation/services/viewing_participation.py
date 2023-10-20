@@ -76,7 +76,7 @@ def handle_get_created_events(request_data, user):
     else:
         events = Event.objects.filter(creator=user, status__in=desired_event_status)
 
-    return events
+    return events.order_by('-start_date_time')
 
 
 @catch_exception_and_convert_to_invalid_request_decorator((ObjectDoesNotExist,))

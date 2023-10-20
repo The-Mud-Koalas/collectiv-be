@@ -8,3 +8,7 @@ class UnauthorizedException(Exception):
 
 class InvalidRequestException(Exception):
     pass
+
+
+class ImproperNetworkAccessException(Exception):
+    pass

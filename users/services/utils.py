@@ -30,3 +30,7 @@ def get_user_by_id_or_raise_exception_thread_safe(user_id):
 
     else:
         raise ObjectDoesNotExist(f'User with id {user_id} does not exist')
+
+
+def compute_user_rank(user):
+    return User.objects.filter(previous_month_points__gt=user.get_previous_month_reward_points()).count() + 1

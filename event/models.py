@@ -1,3 +1,5 @@
+import datetime
+
 from communalspace import utils as app_utils
 from communalspace.settings import MINIMUM_SECONDS_FOR_REWARD_ELIGIBILITY
 from django.db import models
@@ -300,6 +302,7 @@ class Initiative(Event):
     participation_registration_enabled = models.BooleanField(default=True)
     average_participant_attendance_duration = models.FloatField(default=0)
     number_of_durations_counted = models.PositiveIntegerField(default=0)
+    number_of_attending_participants = models.PositiveIntegerField(default=0)
 
     def get_type(self):
         return EventType.INITIATIVE
@@ -334,8 +337,15 @@ class Initiative(Event):
         self.save()
         return self.average_participant_attendance_duration
 
+    def register_attending_participant(self):
+        self.number_of_attending_participants += 1
+        self.save()
+
     def get_participants_average_attendance_duration(self):
         return self.average_participant_attendance_duration
+
+    def get_number_of_attending_participant(self):
+        return self.number_of_attending_participants
 
 
 class GoalKind(models.Model):
@@ -404,6 +414,7 @@ class Project(Event):
 class EventParticipation(PolymorphicModel):
     participant = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     registration_time = models.DateTimeField(auto_now=True)
+    first_participation_time = models.DateTimeField(null=True, default=None)
     has_left_forum = models.BooleanField(default=False)
     rewarded = models.BooleanField(default=False)
     submitted_review = models.BooleanField(default=False)
@@ -473,6 +484,9 @@ class EventParticipation(PolymorphicModel):
     def get_participant(self):
         return self.participant
 
+    def is_first_time_attending(self):
+        return self.first_participation_time is None
+
 
 class AttendableEventParticipation(EventParticipation):
     is_currently_attending = models.BooleanField(default=False)
@@ -511,6 +525,9 @@ class AttendableEventParticipation(EventParticipation):
         return self.is_currently_attending
 
     def check_in(self):
+        if self.is_first_time_attending():
+            self.first_participation_time = datetime.datetime.utcnow()
+
         self.set_attended(True)
         check_in_activity = self.add_activity(AttendanceActivityType.CHECK_IN.value)
         self.is_currently_attending = True
@@ -545,6 +562,12 @@ class AttendableEventParticipation(EventParticipation):
 
 class InitiativeParticipation(AttendableEventParticipation):
     event = models.ForeignKey('event.Initiative', on_delete=models.CASCADE)
+
+    def check_in(self):
+        if self.is_first_time_attending():
+            self.get_event().register_attending_participant()
+
+        return super().check_in()
 
     def check_out(self):
         previous_attendance_duration = self.get_attendance_duration()
@@ -628,6 +651,9 @@ class ContributionParticipation(EventParticipation):
         raise NotImplementedError('Contribution participation cannot be deleted')
 
     def register_contribution(self, contributed_amount):
+        if self.first_participation_time is None:
+            self.first_participation_time = datetime.datetime.utcnow()
+
         self.contributionactivity_set.create(contribution=contributed_amount)
         self.total_contribution += contributed_amount
         self.save()
@@ -842,6 +868,7 @@ class InitiativeSerializer(serializers.ModelSerializer):
         serialized_data['participation_registration_enabled'] = initiative.get_participation_registration_enabled()
         serialized_data['average_participant_attendance_duration'] = \
             initiative.get_participants_average_attendance_duration()
+        serialized_data['number_of_attending_participants'] = initiative.get_number_of_attending_participant()
 
         return serialized_data
 

@@ -11,10 +11,13 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 from .credentials_setup import firebase_admin, google_storage
 from datetime import timedelta
+from dotenv import load_dotenv
 from firebase_admin import auth, credentials, initialize_app
 from pathlib import Path
 import dj_database_url
 import os
+
+load_dotenv()
 
 firebase_admin.setup_firebase_admin_credentials()
 google_storage.setup_google_storage_credentials()
@@ -29,11 +32,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ['DJANGO_SECRET']  # NOSONAR
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('ENVIRONMENT', 'DEVELOPMENT') == 'DEVELOPMENT'
 
 ALLOWED_HOSTS = ['*']
 CORS_ALLOW_HEADERS = ['*']
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    'https://collectiv-fe-display.vercel.app',
+    'https://collectiv-fe-web.vercel.app',
+    'https://mud-koalas-communal-space-stg-oxybezqe2a-ts.a.run.app',
+    'https://mud-koalas-communal-space-76mcmzlezq-ts.a.run.app',
+]
+
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        *CORS_ALLOWED_ORIGINS,
+        'http://localhost:8000',
+        'http://localhost:3000'
+    ]
+
 
 # Application definition
 
@@ -49,6 +65,7 @@ INSTALLED_APPS = [
     'polymorphic',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'django_apscheduler',
 
     'analytics',
     'event',
@@ -71,6 +88,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'corsheaders.middleware.CorsMiddleware',
+    'communalspace.middleware.CorsOriginPresenceMiddleware',
 ]
 
 ROOT_URLCONF = 'communalspace.urls'
@@ -178,3 +196,11 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 SERVER_EMAIL = os.getenv('SERVER_EMAIL', 'smtp.gmail.com')
+
+APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
+APSCHEDULER_RUN_NOW_TIMEOUT = 25  # Seconds
+
+# AI Model Settings
+HUGGING_FACE_ACCESS_TOKEN = os.getenv("HUGGING_FACE_ACCESS_TOKEN")
+SENTIMENT_ANALYSIS_ENDPOINT = "https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest"
+TOKEN_CLASSIFICATION_ENDPOINT = "https://api-inference.huggingface.co/models/xlm-roberta-large-finetuned-conll03-english"

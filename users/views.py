@@ -1,5 +1,5 @@
 from .models import UserSerializer
-from .services import user
+from .services import user, wrap
 from communalspace.decorators import firebase_authenticated
 from django.db import transaction
 from django.views.decorators.http import require_POST, require_GET
@@ -44,7 +44,6 @@ def serve_update_user_location_tracking_preference(request):
     user.handle_update_user_location_tracking_preference(request_data, request.user)
     response_data = {'message': 'User data and preferences is successfully updated'}
     return Response(data=response_data)
-
 
 
 @require_GET
@@ -123,6 +122,20 @@ def serve_update_user_prompted_location_tracking(request):
     user.handle_update_user_prompted_location_tracking(request_data, request.user)
     response_data = {'message': 'User location tracking prompt status is successfully updated'}
     return Response(data=response_data)
+
+
+@require_GET
+@api_view(['GET'])
+@firebase_authenticated()
+def serve_get_user_wrap(request):
+    """
+    This view serves as the endpoint to get user monthly
+    analytical data.
+    ----------------------------------------------------------
+    """
+    wrap_data = wrap.handle_get_user_wrap(request.user)
+    return Response(data=wrap_data)
+
 
 
 
