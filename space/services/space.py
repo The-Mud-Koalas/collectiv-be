@@ -1,7 +1,7 @@
 from communalspace.exceptions import InvalidRequestException
 from numbers import Number
 from ..models import Location
-from . import utils
+from . import utils, haversine
 
 
 def _validate_create_location_request(request_data: dict):
@@ -56,7 +56,19 @@ def handle_get_location_by_id(location_id):
 
 
 def handle_get_location_by_latitude_longitude(request_data):
-    latitude, longitude = utils.parse_coordinate_fail_silently(request_data)
-    return Location.objects.filter(latitude=latitude, longitude=longitude).first()
+    latitude, longitude = utils.parse_coordinate(request_data)
+    all_locations = Location.objects.all()
+    sorted_locations = sorted(
+        all_locations,
+        key=lambda l: haversine.haversine(
+            latitude,
+            longitude,
+            l.latitude,
+            l.longitude)
+    )
 
+    if len(sorted_locations) > 0:
+        return sorted_locations[0]
 
+    else:
+        return None
