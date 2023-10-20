@@ -89,7 +89,7 @@ def _update_project_progress(event, amount_to_update, update_type):
 def handle_update_project_progress(request_data, user):
     _validate_update_project_progress_request(request_data)
     project = utils.get_project_by_id_or_raise_exception_thread_safe(request_data.get('event_id'))
-    _validate_event_ownership(project, user)
+    validate_event_ownership(project, user)
     project.register_contribution(user, request_data.get('amount_to_update'))
     return {
         'progress': project.get_progress()
